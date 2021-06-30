@@ -30,11 +30,18 @@ def process_series_matrix(series_matrix_path):
                 series_data[key] = [strip_quotes(value) for value in values]
             if line.startswith("!Sample_"):
                 key, *values = line.removeprefix("!Sample_").split("\t")
-                # Some keys appear multiple times, so we will suffix later ones with 1, 2, etc
-                key_count = len([k for k in sample_data.keys() if k.startswith(key)])
-                if key_count == 0:
-                    key_count = ''
-                sample_data[key+f"{key_count}"] = [strip_quotes(value) for value in values]
+                if key == 'characteristics_ch1':
+                    # Extract the specific characteristics out
+                    values = [strip_quotes(value) for value in values]
+                    characteristic = values[0].split(":")[0]
+                    char_values = [value.split(":")[1].strip() for value in values]
+                    sample_data[characteristic] = char_values
+                else:
+                    # Some keys appear multiple times, so we will suffix later ones with 1, 2, etc
+                    key_count = len([k for k in sample_data.keys() if k.startswith(key)])
+                    if key_count == 0:
+                        key_count = ''
+                    sample_data[key+f"{key_count}"] = [strip_quotes(value) for value in values]
 
     sample_data = pandas.DataFrame.from_dict(sample_data, 'columns', dtype="str")
     series_data = pandas.DataFrame.from_dict(series_data, 'index', dtype="str")
