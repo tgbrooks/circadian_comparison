@@ -105,7 +105,7 @@ rule run_salmon:
         mem_mb=20000,
         threads=6
     shell:
-        "salmon quant -l IU -i /project/itmatlab/for_dimitra/pseudoalign_benchmark/dimitra/RevisionBMC/annotation/salmon.index/Mus_musculus.GRCm38.75 -1 {input}/*_1.fastq -2 {input}/*_2.fastq -o {output} -p 6"
+        "salmon quant -l A -i /project/itmatlab/for_dimitra/pseudoalign_benchmark/dimitra/RevisionBMC/annotation/salmon.index/Mus_musculus.GRCm38.75 -1 {input}/*_1.fastq -2 {input}/*_2.fastq -o {output} -p 6"
 
 def all_selected_samples(GSE):
     ''' List all selected sample identifiers for a study '''
