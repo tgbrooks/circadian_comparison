@@ -9,7 +9,7 @@ targets = [
     },
     {
         "GSE": "GSE70497",
-        "sample_selector": lambda x: "WT" in x["source_name_ch1"],
+        "sample_selector": lambda x: x.genotype == "WT",
     },
     {
         "GSE": "GSE40190",
@@ -19,7 +19,8 @@ targets = [
 targets_by_gse = {record['GSE']:record for record in targets}
 
 wildcard_constraints:
-    GSE = "GSE(\d+)"
+    GSE = "GSE(\d+)",
+    sample = "GSM(\d+)"
 
 rule all:
     input:
@@ -69,7 +70,7 @@ checkpoint split_samples:
             sample_dir.mkdir(exist_ok=True)
             (sample_dir / "SRX.txt").open("w").write(srx)
 
-rule download_select_sra_files:
+rule download_sra_files:
     input:
         "data/{GSE}/samples/{sample}/SRX.txt"
     output:
@@ -98,18 +99,22 @@ rule run_salmon:
         "data/{GSE}/fastq/{sample}"
     output:
         directory("data/{GSE}/salmon/{sample}")
+    message:
+        "Salmon: quantify {wildcards.sample} from {wildcards.GSE}"
     resources:
-        mem_mb=20000
+        mem_mb=20000,
         threads=6
     shell:
         "salmon quant -l IU -i /project/itmatlab/for_dimitra/pseudoalign_benchmark/dimitra/RevisionBMC/annotation/salmon.index/Mus_musculus.GRCm38.75 -1 {input}/*_1.fastq -2 {input}/*_2.fastq -o {output} -p 6"
 
 def all_selected_samples(GSE):
+    ''' List all selected sample identifiers for a study '''
     output = checkpoints.split_samples.get(GSE=GSE).output[0]
     samples_dir = pathlib.Path(output)
     return [sample_dir.name for sample_dir in samples_dir.glob("GSM*")]
 
 def all_salmon_output(wildcards):
+    ''' List the salmon output files from all (selected) samples '''
     samples = all_selected_samples(wildcards.GSE)
     return [f"data/{wildcards.GSE}/salmon/{sample}" for sample in samples]
 
@@ -118,5 +123,7 @@ rule aggregate_expression_values:
         all_salmon_output
     output:
         "data/{GSE}/expression.txt"
+    message:
+        "Aggregate Salmon quantifications for {wildcards.GSE}"
     run:
         pass
