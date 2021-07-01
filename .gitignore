@@ -5,3 +5,4 @@ __pycache__
 *.swa
 .snakemake
 venv
+logs
