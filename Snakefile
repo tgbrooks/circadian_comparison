@@ -1,4 +1,5 @@
 import pathlib
+import json
 import pandas
 from  process_series_matrix import process_series_matrix
 
@@ -26,7 +27,9 @@ rule all:
     input:
         expand("data/{GSE}/sample_data.txt", GSE=targets_by_gse.keys()),
         #"data/GSE70497/salmon/GSM1787223/",
-        "data/GSE40190/expression.txt"
+        "data/GSE40190/expression.tpm.txt",
+        "data/GSE40190/expression.num_reads.txt",
+        "data/GSE40190/salmon.meta_info.json"
 
 rule get_series_matrix:
     output:
@@ -122,8 +125,25 @@ rule aggregate_expression_values:
     input:
         all_salmon_output
     output:
-        "data/{GSE}/expression.txt"
+        "data/{GSE}/expression.tpm.txt",
+        "data/{GSE}/expression.num_reads.txt",
+        "data/{GSE}/salmon.meta_info.json"
     message:
         "Aggregate Salmon quantifications for {wildcards.GSE}"
     run:
-        pass
+        tpm_dict = {}
+        num_reads_dict = {}
+        meta_info = {}
+        for sample,sampledir in zip(all_selected_samples(wildcards.GSE),input): 
+            samplequantfile = sampledir + "/quant.sf"
+            quant = pandas.read_csv(samplequantfile,sep="\t", index_col=0)
+            tpm_dict[sample]=quant.TPM
+            num_reads_dict[sample]=quant.NumReads
+            with open(sampledir + "/aux_info/meta_info.json") as metainfofile:
+                meta_info[sample] = json.load(metainfofile)
+        tpm = pandas.DataFrame.from_dict(tpm_dict,orient="columns")
+        tpm.to_csv(output[0],sep = "\t")
+        num_reads = pandas.DataFrame.from_dict(num_reads_dict,orient="columns")
+        num_reads.to_csv(output[1],sep = "\t")
+        with open(output[2], "wt") as meta_info_out:
+            json.dump(meta_info, meta_info_out, indent=4)
