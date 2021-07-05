@@ -102,13 +102,17 @@ rule run_salmon:
         "data/{study}/fastq/{sample}"
     output:
         directory("data/{study}/salmon/{sample}")
+    params:
+        index_dir = "/project/itmatlab/for_dimitra/pseudoalign_benchmark/dimitra/RevisionBMC/annotation/salmon.index/Mus_musculus.GRCm38.75",
+        gtf_file = "/project/itmatlab/index/STAR-2.7.6a_indexes/GRCm38.ensemblv102/Mus_musculus.GRCm38.102.gtf",
+        args = "-l A --softclip --softclipOverhangs --seqBias --gcBias --reduceGCMemory --biasSpeedSamp 10 --posBias -p 6"
     message:
         "Salmon: quantify {wildcards.sample} from {wildcards.study}"
     resources:
-        mem_mb=20000,
+        mem_mb=25000,
         threads=6
     shell:
-        "salmon quant -l A -i /project/itmatlab/for_dimitra/pseudoalign_benchmark/dimitra/RevisionBMC/annotation/salmon.index/Mus_musculus.GRCm38.75 -g  /project/itmatlab/index/STAR-2.7.6a_indexes/GRCm38.ensemblv102/Mus_musculus.GRCm38.102.gtf -1 {input}/*_1.fastq -2 {input}/*_2.fastq -o {output} -p 6"
+        "salmon quant -i {params.index_dir} -g {params.gtf_file} {params.args} -1 {input}/*_1.fastq -2 {input}/*_2.fastq -o {output}"
 
 def all_selected_samples(study):
     ''' List all selected sample identifiers for a study '''
