@@ -26,9 +26,8 @@ wildcard_constraints:
 rule all:
     input:
         expand("data/{GSE}/sample_data.txt", GSE=targets_by_gse.keys()),
-        #"data/GSE70497/salmon/GSM1787223/",
-        "data/GSE40190/expression.tpm.txt",
-        "data/GSE40190/expression.num_reads.txt",
+        "data/GSE40190/label_expression.tpm.txt",
+        "data/GSE40190/label_expression.num_reads.txt",
         "data/GSE40190/salmon.meta_info.json"
 
 rule get_series_matrix:
@@ -134,7 +133,7 @@ rule aggregate_expression_values:
         tpm_dict = {}
         num_reads_dict = {}
         meta_info = {}
-        for sample,sampledir in zip(all_selected_samples(wildcards.GSE),input): 
+        for sample,sampledir in zip(all_selected_samples(wildcards.GSE),input):
             samplequantfile = sampledir + "/quant.sf"
             quant = pandas.read_csv(samplequantfile,sep="\t", index_col=0)
             tpm_dict[sample]=quant.TPM
@@ -147,3 +146,20 @@ rule aggregate_expression_values:
         num_reads.to_csv(output[1],sep = "\t")
         with open(output[2], "wt") as meta_info_out:
             json.dump(meta_info, meta_info_out, indent=4)
+
+rule label_data:
+    input:
+        "data/{GSE}/expression.tpm.txt",
+        "data/{GSE}/expression.num_reads.txt",
+        "data/{GSE}/sample_data.txt"
+    output:
+        "data/{GSE}/label_expression.tpm.txt",
+        "data/{GSE}/label_expression.num_reads.txt"
+    run:
+        sample = pandas.read_csv(input[2], sep="\t", index_col="geo_accession")
+        tpm = pandas.read_csv(input[0], sep="\t")
+        tpm.columns = sample.reindex(tpm.columns, fill_value="Name").title
+        tpm.to_csv(output[0], sep="\t", index=False)
+        num_reads = pandas.read_csv(input[1], sep="\t")
+        num_reads.columns = sample.reindex(num_reads.columns, fill_value="Name").title
+        num_reads.to_csv(output[1], sep ="\t", index=False)
