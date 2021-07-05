@@ -139,7 +139,7 @@ rule aggregate_expression_values:
         num_reads_dict = {}
         meta_info = {}
         for sample,sampledir in zip(all_selected_samples(wildcards.study),input):
-            samplequantfile = sampledir + "/quant.sf"
+            samplequantfile = sampledir + "/quant.genes.sf"
             quant = pandas.read_csv(samplequantfile,sep="\t", index_col=0)
             tpm_dict[sample]=quant.TPM
             num_reads_dict[sample]=quant.NumReads
