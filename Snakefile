@@ -3,51 +3,52 @@ import json
 import pandas
 from  process_series_matrix import process_series_matrix
 
-targets = [
-    {
+targets = {
+    "Schwartz21": {
         "GSE": "GSE165198",
         "sample_selector": lambda x: True,
     },
-    {
+
+    "Yang16A": {
         "GSE": "GSE70497",
         "sample_selector": lambda x: x.genotype == "WT",
     },
-    {
+
+    "Lahens15": {
         "GSE": "GSE40190",
         "sample_selector": lambda x: True,
     },
-]
-targets_by_gse = {record['GSE']:record for record in targets}
+}
 
 wildcard_constraints:
-    GSE = "GSE(\d+)",
     sample = "GSM(\d+)"
 
 rule all:
     input:
-        expand("data/{GSE}/sample_data.txt", GSE=targets_by_gse.keys()),
-        "data/GSE40190/label_expression.tpm.txt",
-        "data/GSE40190/label_expression.num_reads.txt",
-        "data/GSE40190/salmon.meta_info.json"
+        expand("data/{study}/sample_data.txt", study=targets.keys()),
+        "data/Lahens15/label_expression.tpm.txt",
+        "data/Lahens15/label_expression.num_reads.txt",
+        "data/Lahens15/salmon.meta_info.json"
 
 rule get_series_matrix:
     output:
-        "data/{GSE}/{GSE}_series_matrix.txt.gz"
+        "data/{study}/series_matrix.txt.gz"
     message:
-        "Fetching Series Matrix for {wildcards.GSE}"
+        "Fetching Series Matrix for {wildcards.study}"
     run:
         # Like GSE1nnn, the folder where the GSE series matrix resides
-        gse_folder = wildcards.GSE[:-3]+"nnn"
-        shell("wget -P data/{wildcards.GSE}/ ftp://ftp.ncbi.nlm.nih.gov/geo/series/{gse_folder}/{wildcards.GSE}/matrix/{wildcards.GSE}_series_matrix.txt.gz")
+        GSE = targets[wildcards.study]['GSE']
+        gse_folder = GSE[:-3]+"nnn"
+        shell(f"wget ftp://ftp.ncbi.nlm.nih.gov/geo/series/{gse_folder}/{GSE}/matrix/{GSE}_series_matrix.txt.gz -O {output}")
 
 rule process_series_matrix:
     input:
-        "data/{GSE}/{GSE}_series_matrix.txt.gz"
+        "data/{study}/series_matrix.txt.gz"
     output:
-        "data/{GSE}/series_data.txt",
-        "data/{GSE}/sample_data.txt"
+        "data/{study}/series_data.txt",
+        "data/{study}/sample_data.txt"
     message:
-        "Processing series matrix for {wildcards.GSE}"
+        "Processing series matrix for {wildcards.study}"
     run:
         series_data, sample_data = process_series_matrix(input[0])
         series_data.to_csv(output[0], sep="\t", header=False)
@@ -55,16 +56,16 @@ rule process_series_matrix:
 
 checkpoint split_samples:
     input:
-        "data/{GSE}/sample_data.txt"
+        "data/{study}/sample_data.txt"
     output:
-        directory("data/{GSE}/samples")
+        directory("data/{study}/samples")
     run:
         outdir = pathlib.Path(output[0])
         outdir.mkdir(exist_ok=True)
 
         sample_data = pandas.read_csv(input[0], sep="\t")
         print("Sample data", sample_data.source_name_ch1)
-        selector = targets_by_gse[wildcards.GSE]['sample_selector']
+        selector = targets[wildcards.study]['sample_selector']
         SRX = {row['geo_accession']:row['SRX'] for i, row in sample_data.iterrows() if selector(row)}
         for sample, srx in SRX.items():
             print(f"Processing {sample}, {srx}")
@@ -74,66 +75,66 @@ checkpoint split_samples:
 
 rule download_sra_files:
     input:
-        "data/{GSE}/samples/{sample}/SRX.txt"
+        "data/{study}/samples/{sample}/SRX.txt"
     output:
-        directory("data/{GSE}/SRA/{sample}/")
+        directory("data/{study}/SRA/{sample}/")
     message:
-        "Fetching SRA files for {wildcards.GSE}"
+        "Fetching SRA files for {wildcards.study}"
     run:
         pathlib.Path(output[0]).mkdir(exist_ok=True)
         with pathlib.Path(input[0]).open() as srx_file:
             srx = srx_file.read().strip()
         if srx != '':
-            shell(f"prefetch -O data/{wildcards.GSE}/SRA/{wildcards.sample}/ {srx}")
+            shell(f"prefetch -O data/{wildcards.study}/SRA/{wildcards.sample}/ {srx}")
 
 rule extract_fastq:
     input:
-        "data/{GSE}/SRA/{sample}"
+        "data/{study}/SRA/{sample}"
     output:
-        directory("data/{GSE}/fastq/{sample}")
+        directory("data/{study}/fastq/{sample}")
     message:
-        "Extracting SRA to FastQ for {wildcards.GSE} {wildcards.sample}"
+        "Extracting SRA to FastQ for {wildcards.study} {wildcards.sample}"
     shell:
-        "fastq-dump --split-files -O data/{wildcards.GSE}/fastq/{wildcards.sample} {input}/*/*.sra"
+        "fastq-dump --split-files -O data/{wildcards.study}/fastq/{wildcards.sample} {input}/*/*.sra"
 
 rule run_salmon:
     input:
-        "data/{GSE}/fastq/{sample}"
+        "data/{study}/fastq/{sample}"
     output:
-        directory("data/{GSE}/salmon/{sample}")
+        directory("data/{study}/salmon/{sample}")
     message:
-        "Salmon: quantify {wildcards.sample} from {wildcards.GSE}"
+        "Salmon: quantify {wildcards.sample} from {wildcards.study}"
     resources:
         mem_mb=20000,
         threads=6
     shell:
         "salmon quant -l A -i /project/itmatlab/for_dimitra/pseudoalign_benchmark/dimitra/RevisionBMC/annotation/salmon.index/Mus_musculus.GRCm38.75 -g  /project/itmatlab/index/STAR-2.7.6a_indexes/GRCm38.ensemblv102/Mus_musculus.GRCm38.102.gtf -1 {input}/*_1.fastq -2 {input}/*_2.fastq -o {output} -p 6"
 
-def all_selected_samples(GSE):
+def all_selected_samples(study):
     ''' List all selected sample identifiers for a study '''
-    output = checkpoints.split_samples.get(GSE=GSE).output[0]
+    output = checkpoints.split_samples.get(study=study).output[0]
     samples_dir = pathlib.Path(output)
     return [sample_dir.name for sample_dir in samples_dir.glob("GSM*")]
 
 def all_salmon_output(wildcards):
     ''' List the salmon output files from all (selected) samples '''
-    samples = all_selected_samples(wildcards.GSE)
-    return [f"data/{wildcards.GSE}/salmon/{sample}" for sample in samples]
+    samples = all_selected_samples(wildcards.study)
+    return [f"data/{wildcards.study}/salmon/{sample}" for sample in samples]
 
 rule aggregate_expression_values:
     input:
         all_salmon_output
     output:
-        "data/{GSE}/expression.tpm.txt",
-        "data/{GSE}/expression.num_reads.txt",
-        "data/{GSE}/salmon.meta_info.json"
+        "data/{study}/expression.tpm.txt",
+        "data/{study}/expression.num_reads.txt",
+        "data/{study}/salmon.meta_info.json"
     message:
-        "Aggregate Salmon quantifications for {wildcards.GSE}"
+        "Aggregate Salmon quantifications for {wildcards.study}"
     run:
         tpm_dict = {}
         num_reads_dict = {}
         meta_info = {}
-        for sample,sampledir in zip(all_selected_samples(wildcards.GSE),input):
+        for sample,sampledir in zip(all_selected_samples(wildcards.study),input):
             samplequantfile = sampledir + "/quant.sf"
             quant = pandas.read_csv(samplequantfile,sep="\t", index_col=0)
             tpm_dict[sample]=quant.TPM
@@ -149,12 +150,12 @@ rule aggregate_expression_values:
 
 rule label_data:
     input:
-        "data/{GSE}/expression.tpm.txt",
-        "data/{GSE}/expression.num_reads.txt",
-        "data/{GSE}/sample_data.txt"
+        "data/{study}/expression.tpm.txt",
+        "data/{study}/expression.num_reads.txt",
+        "data/{study}/sample_data.txt"
     output:
-        "data/{GSE}/label_expression.tpm.txt",
-        "data/{GSE}/label_expression.num_reads.txt"
+        "data/{study}/label_expression.tpm.txt",
+        "data/{study}/label_expression.num_reads.txt"
     run:
         sample = pandas.read_csv(input[2], sep="\t", index_col="geo_accession")
         tpm = pandas.read_csv(input[0], sep="\t")
