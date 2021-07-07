@@ -1,5 +1,6 @@
 import pathlib
 import json
+import re
 import pandas
 from  process_series_matrix import process_series_matrix
 
@@ -168,3 +169,22 @@ rule label_data:
         num_reads = pandas.read_csv(input[1], sep="\t")
         num_reads.columns = sample.reindex(num_reads.columns, fill_value="Name").title
         num_reads.to_csv(output[1], sep ="\t", index=False)
+
+def sample_timepoints(study):
+    sample_data = pandas.read_csv(f"data/{study}/sample_data.txt", sep="\t", index_col="geo_accession")
+    expression_table = pandas.read_csv(f"data/{study}/expression.tpm.txt", sep="\t", index_col=0)
+    times = list(sample_data.loc[expression_table.columns].time)
+    times = [int(re.match("[ZC]T(\d+)", time).groups()[0]) for time in times]
+    return times
+
+rule run_JTK:
+    input:
+        "data/{study}/expression.tpm.txt",
+        "data/{study}/sample_data.txt"
+    output:
+        "data/{study}/jtk/JTKresult_expression.tpm.txt"
+    params:
+        timepoints = lambda wildcards: sample_timepoints(wildcards.study),
+        out_dir = "data/{study}/jtk/"
+    script:
+        "scripts/run_jtk.R"
