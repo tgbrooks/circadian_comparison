@@ -111,9 +111,9 @@ rule extract_fastq:
 rule generate_salmon_index:
     output:
         directory("index/mouse_k{k}")
+    threads: 16
     resources:
         mem_mb=70000,
-        threads=16
     shell:
         "salmon index -p 16 -i {output} \
              -t /project/itmatlab/for_dimitra/pseudoalign_benchmark/dimitra/RevisionBMC/annotation/salmon.index/Mus_musculus.GRCm38.75.TranscriptSeq.std.merged_with.dna.primary_assembly.fa \
@@ -131,9 +131,9 @@ rule run_salmon:
         args = "-l A --softclip --softclipOverhangs --seqBias --gcBias --reduceGCMemory --biasSpeedSamp 10 --posBias -p 6"
     message:
         "Salmon: quantify {wildcards.sample} from {wildcards.study}"
+    threads: 6
     resources:
         mem_mb=25000,
-        threads=6
     shell:
         "salmon quant -i {input[1]} -g {params.gtf_file} {params.args} -1 {input[0]}/*_1.fastq -2 {input[0]}/*_2.fastq -o {output}"
 
