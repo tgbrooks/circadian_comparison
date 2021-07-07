@@ -19,6 +19,11 @@ targets = {
         "GSE": "GSE40190",
         "sample_selector": lambda x: True,
     },
+
+    "Weger18": {
+        "GSE": "GSE114400",
+        "sample_selector": lambda x: x['gut microbiome status'] == "conventional raised"
+    },
 }
 
 wildcard_constraints:
@@ -29,7 +34,12 @@ rule all:
         expand("data/{study}/sample_data.txt", study=targets.keys()),
         "data/Lahens15/label_expression.tpm.txt",
         "data/Lahens15/label_expression.num_reads.txt",
-        "data/Lahens15/salmon.meta_info.json"
+        "data/Lahens15/salmon.meta_info.json",
+        "data/Lahens15/jtk/JTKresult_expression.tpm.txt",
+        "data/Weger18/label_expression.tpm.txt",
+        "data/Weger18/label_expression.num_reads.txt",
+        "data/Weger18/salmon.meta_info.json",
+        "data/Weger18/jtk/JTKresult_expression.tpm.txt",
 
 rule get_series_matrix:
     output:
