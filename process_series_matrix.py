@@ -15,6 +15,7 @@ def extract_SRX(string):
 def process_series_matrix(series_matrix_path):
     series_data = {}
     sample_data = {}
+    sample_characteristics = {}
     with gzip.open(series_matrix_path, "rt", newline='') as series_matrix_stream:
         series_matrix = series_matrix_stream.read()
         # Remove carriage returns
@@ -33,9 +34,12 @@ def process_series_matrix(series_matrix_path):
                 if key == 'characteristics_ch1':
                     # Extract the specific characteristics out
                     values = [strip_quotes(value) for value in values]
-                    characteristic = values[0].split(":")[0]
-                    char_values = [value.split(":")[1].strip() for value in values]
-                    sample_data[characteristic] = char_values
+                    for i, entry in enumerate(values):
+                        char_name, char_value = entry.split(":")
+                        char_value = char_value.strip()
+                        sample = sample_characteristics.get(i, {})
+                        sample[char_name] = char_value
+                        sample_characteristics[i] = sample
                 else:
                     # Some keys appear multiple times, so we will suffix later ones with 1, 2, etc
                     key_count = len([k for k in sample_data.keys() if k.startswith(key)])
@@ -43,9 +47,14 @@ def process_series_matrix(series_matrix_path):
                         key_count = ''
                     sample_data[key+f"{key_count}"] = [strip_quotes(value) for value in values]
 
-    sample_data = pandas.DataFrame.from_dict(sample_data, 'columns', dtype="str")
     series_data = pandas.DataFrame.from_dict(series_data, 'index', dtype="str")
-    print(f"Found {sample_data.shape[1]} values for {sample_data.shape[0]} samples")
+    sample_data = pandas.DataFrame.from_dict(sample_data, 'columns', dtype="str")
+    sample_characteristics = pandas.DataFrame.from_dict(sample_characteristics, 'index', dtype='str')
+
+    print(f"Found {sample_data.shape[1]} values for {sample_data.shape[0]} samples with {sample_characteristics.shape[1]} characteristics")
+
+    # Include the sample characteristics in the sample-level table
+    sample_data = pandas.concat((sample_data, sample_characteristics), axis=1)
 
     sample_data['SRX'] = ''
     for col in sample_data.columns:
