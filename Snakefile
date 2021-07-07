@@ -2,7 +2,7 @@ import pathlib
 import json
 import re
 import pandas
-from  process_series_matrix import process_series_matrix
+from  scripts.process_series_matrix import process_series_matrix
 
 targets = {
     "Schwartz21": {
