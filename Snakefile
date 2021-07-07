@@ -98,13 +98,25 @@ rule extract_fastq:
     shell:
         "fastq-dump --split-files -O data/{wildcards.study}/fastq/{wildcards.sample} {input}/*/*.sra"
 
+rule generate_salmon_index:
+    output:
+        directory("index/mouse_k{k}")
+    resources:
+        mem_mb=70000,
+        threads=16
+    shell:
+        "salmon index -p 16 -i {output} \
+             -t /project/itmatlab/for_dimitra/pseudoalign_benchmark/dimitra/RevisionBMC/annotation/salmon.index/Mus_musculus.GRCm38.75.TranscriptSeq.std.merged_with.dna.primary_assembly.fa \
+             -d /project/itmatlab/for_dimitra/pseudoalign_benchmark/dimitra/RevisionBMC/annotation/salmon.index/decoy_names.txt \
+             -k {wildcards.k}"
+
 rule run_salmon:
     input:
-        "data/{study}/fastq/{sample}"
+        "data/{study}/fastq/{sample}",
+        "index/mouse_k31"
     output:
         directory("data/{study}/salmon/{sample}")
     params:
-        index_dir = "/project/itmatlab/for_dimitra/pseudoalign_benchmark/dimitra/RevisionBMC/annotation/salmon.index/Mus_musculus.GRCm38.75",
         gtf_file = "/project/itmatlab/index/STAR-2.7.6a_indexes/GRCm38.ensemblv102/Mus_musculus.GRCm38.102.gtf",
         args = "-l A --softclip --softclipOverhangs --seqBias --gcBias --reduceGCMemory --biasSpeedSamp 10 --posBias -p 6"
     message:
@@ -113,7 +125,7 @@ rule run_salmon:
         mem_mb=25000,
         threads=6
     shell:
-        "salmon quant -i {params.index_dir} -g {params.gtf_file} {params.args} -1 {input}/*_1.fastq -2 {input}/*_2.fastq -o {output}"
+        "salmon quant -i {input[1]} -g {params.gtf_file} {params.args} -1 {input[0]}/*_1.fastq -2 {input[0]}/*_2.fastq -o {output}"
 
 def all_selected_samples(study):
     ''' List all selected sample identifiers for a study '''
