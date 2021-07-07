@@ -1,5 +1,6 @@
 results/*
 data/*
+index/*
 __pycache__
 *.swp
 *.swa
