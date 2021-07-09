@@ -18,12 +18,26 @@ targets = {
     "Lahens15": {
         "GSE": "GSE40190",
         "sample_selector": lambda x: True,
+        "time": lambda sample_data, expression_table: list(sample_data.loc[expression_table.columns].time),
     },
 
     "Weger18": {
         "GSE": "GSE114400",
-        "sample_selector": lambda x: x['gut microbiome status'] == "conventional raised"
+        "sample_selector": lambda x: x['gut microbiome status'] == "conventional raised",
+        "time": lambda sample_data, expression_table: list(sample_data.loc[expression_table.columns]['zeitgeber time']),
     },
+
+    "Weger18_Liver_M": {
+        "GSE": "GSE114400",
+        "sample_selector": lambda x: x.Sex == "male" and x['gut microbiome status'] == "conventional raised",
+        "time": lambda sample_data, expression_table: list(sample_data.loc[expression_table.columns]['zeitgeber time']),
+    },
+
+    "Weger18_Liver_F": {
+    "GSE": "GSE114400",
+    "sample_selector": lambda x: x.Sex == "Female" and x['gut microbiome status'] == "conventional raised",
+    "time": lambda sample_data, expression_table: list(sample_data.loc[expression_table.columns]['zeitgeber time']),
+     },
 }
 
 wildcard_constraints:
@@ -40,6 +54,14 @@ rule all:
         "data/Weger18/label_expression.num_reads.txt",
         "data/Weger18/salmon.meta_info.json",
         "data/Weger18/jtk/JTKresult_expression.tpm.txt",
+        "data/Weger18_Liver_M/label_expression.tpm.txt",
+        "data/Weger18_Liver_M/label_expression.num_reads.txt",
+        "data/Weger18_Liver_M/salmon.meta_info.json",
+        "data/Weger18_Liver_M/jtk/JTKresult_expression.tpm.txt",
+        "data/Weger18_Liver_F/label_expression.tpm.txt",
+        "data/Weger18_Liver_F/label_expression.num_reads.txt",
+        "data/Weger18_Liver_F/salmon.meta_info.json",
+        "data/Weger18_Liver_F/jtk/JTKresult_expression.tpm.txt",
 
 rule get_series_matrix:
     output:
@@ -106,7 +128,8 @@ rule extract_fastq:
     message:
         "Extracting SRA to FastQ for {wildcards.study} {wildcards.sample}"
     shell:
-        "fastq-dump --split-files -O data/{wildcards.study}/fastq/{wildcards.sample} {input}/*/*.sra"
+        # Note: Refer to https://edwards.sdsu.edu/research/fastq-dump/ for information about using fastq-dump properly
+        "fastq-dump --readids --skip-technical --split-files --clip -O data/{wildcards.study}/fastq/{wildcards.sample} {input}/*/*.sra"
 
 rule generate_salmon_index:
     output:
@@ -195,7 +218,7 @@ rule label_data:
 def sample_timepoints(study):
     sample_data = pandas.read_csv(f"data/{study}/sample_data.txt", sep="\t", index_col="geo_accession")
     expression_table = pandas.read_csv(f"data/{study}/expression.tpm.txt", sep="\t", index_col=0)
-    times = list(sample_data.loc[expression_table.columns].time)
+    times = targets[study]["time"](sample_data, expression_table)
     times = [int(re.match("[ZC]T(\d+)", time).groups()[0]) for time in times]
     return times
 
