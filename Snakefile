@@ -4,41 +4,7 @@ import re
 import pandas
 from  scripts.process_series_matrix import process_series_matrix
 
-targets = {
-    "Schwartz21": {
-        "GSE": "GSE165198",
-        "sample_selector": lambda x: True,
-    },
-
-    "Yang16A": {
-        "GSE": "GSE70497",
-        "sample_selector": lambda x: x.genotype == "WT",
-    },
-
-    "Lahens15": {
-        "GSE": "GSE40190",
-        "sample_selector": lambda x: True,
-        "time": lambda sample_data, expression_table: list(sample_data.loc[expression_table.columns].time),
-    },
-
-    "Weger18": {
-        "GSE": "GSE114400",
-        "sample_selector": lambda x: x['gut microbiome status'] == "conventional raised",
-        "time": lambda sample_data, expression_table: list(sample_data.loc[expression_table.columns]['zeitgeber time']),
-    },
-
-    "Weger18_Liver_M": {
-        "GSE": "GSE114400",
-        "sample_selector": lambda x: x.Sex == "male" and x['gut microbiome status'] == "conventional raised",
-        "time": lambda sample_data, expression_table: list(sample_data.loc[expression_table.columns]['zeitgeber time']),
-    },
-
-    "Weger18_Liver_F": {
-    "GSE": "GSE114400",
-    "sample_selector": lambda x: x.Sex == "Female" and x['gut microbiome status'] == "conventional raised",
-    "time": lambda sample_data, expression_table: list(sample_data.loc[expression_table.columns]['zeitgeber time']),
-     },
-}
+from studies import targets, studies
 
 wildcard_constraints:
     sample = "GSM(\d+)"
@@ -62,6 +28,7 @@ rule all:
         "data/Weger18_Liver_F/label_expression.num_reads.txt",
         "data/Weger18_Liver_F/salmon.meta_info.json",
         "data/Weger18_Liver_F/jtk/JTKresult_expression.tpm.txt",
+        "results/qc.percent_mapping.png",
 
 rule get_series_matrix:
     output:
@@ -148,6 +115,7 @@ rule run_salmon:
         "data/{study}/fastq/{sample}",
         "index/mouse_k31"
     output:
+        "data/{study}/salmon/{sample}/quant.genes.sf",
         directory("data/{study}/salmon/{sample}")
     params:
         gtf_file = "/project/itmatlab/index/STAR-2.7.6a_indexes/GRCm38.ensemblv102/Mus_musculus.GRCm38.102.gtf",
@@ -158,7 +126,7 @@ rule run_salmon:
     resources:
         mem_mb=25000,
     shell:
-        "salmon quant -i {input[1]} -g {params.gtf_file} {params.args} -1 {input[0]}/*_1.fastq -2 {input[0]}/*_2.fastq -o {output}"
+        "salmon quant -i {input[1]} -g {params.gtf_file} {params.args} -1 {input[0]}/*_1.fastq -2 {input[0]}/*_2.fastq -o {output[1]}"
 
 def all_selected_samples(study):
     ''' List all selected sample identifiers for a study '''
@@ -233,3 +201,15 @@ rule run_JTK:
         out_dir = "data/{study}/jtk/"
     script:
         "scripts/run_jtk.R"
+
+rule plot_qc:
+    input:
+        salmon_metainfo = expand("data/{study}/salmon.meta_info.json", study=studies),
+    params:
+        studies = studies,
+    output:
+        percent_mapping = "results/qc.percent_mapping.png",
+        num_processed = "results/qc.num_processed.png",
+        num_mapped = "results/qc.num_mapped.png",
+    script:
+        "scripts/qc_plots.py"
