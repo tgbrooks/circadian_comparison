@@ -232,3 +232,13 @@ rule plot_qc:
         num_mapped = "results/qc.num_mapped.png",
     script:
         "scripts/qc_plots.py"
+
+rule plot_arntl:
+    input:
+        expression_tpm = expand("data/{study}/label_expression.tpm.txt", study=studies),
+    params:
+        studies = studies,
+    output:
+        arntl_expression_tpm = "results/plot_arntl.png",
+    script:
+        "scripts/arntl_plots.py"
