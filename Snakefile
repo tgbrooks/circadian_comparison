@@ -166,21 +166,36 @@ rule aggregate_expression_values:
         with open(output[2], "wt") as meta_info_out:
             json.dump(meta_info, meta_info_out, indent=4)
 
+rule extract_GeneSymbol:
+    input:
+        gtf_file = "/project/itmatlab/index/STAR-2.7.6a_indexes/GRCm38.ensemblv102/Mus_musculus.GRCm38.102.gtf"
+    output:
+        "gene_name.txt"
+    run:
+        shell("""cat {input} | awk 'BEGIN{{FS="\\t"}}{{split($9,a,";"); if($3~"gene") print a[1]"\t"a[3]}}' | sed 's/gene_id "//g' | sed 's/gene_name "//g' | sed 's/"//g' | sed 's/ //g' > {output}""")
+        id_name = pandas.read_csv("gene_name.txt", sep="\t", header=None)
+        id_name.to_csv("gene_name.txt", sep="\t",header=["ID","GeneSymbol"])
+
 rule label_data:
     input:
         "data/{study}/expression.tpm.txt",
         "data/{study}/expression.num_reads.txt",
-        "data/{study}/sample_data.txt"
+        "data/{study}/sample_data.txt",
+        "gene_name.txt"
     output:
         "data/{study}/label_expression.tpm.txt",
         "data/{study}/label_expression.num_reads.txt"
     run:
         sample = pandas.read_csv(input[2], sep="\t", index_col="geo_accession")
         tpm = pandas.read_csv(input[0], sep="\t")
-        tpm.columns = sample.reindex(tpm.columns, fill_value="Name").title
+        tpm.columns = sample.reindex(tpm.columns, fill_value="ID").title
+        gene_name_from_id = pandas.read_csv(input[3], sep="\t", index_col="ID")['GeneSymbol']
+        tpm.insert(1, 'GeneSymbol', tpm['ID'].map(gene_name_from_id))
         tpm.to_csv(output[0], sep="\t", index=False)
         num_reads = pandas.read_csv(input[1], sep="\t")
-        num_reads.columns = sample.reindex(num_reads.columns, fill_value="Name").title
+        num_reads.columns = sample.reindex(num_reads.columns, fill_value="ID").title
+        gene_name_from_id = pandas.read_csv(input[3], sep="\t", index_col="ID")['GeneSymbol']
+        num_reads.insert(1, 'GeneSymbol', num_reads['ID'].map(gene_name_from_id))
         num_reads.to_csv(output[1], sep ="\t", index=False)
 
 def sample_timepoints(study):
