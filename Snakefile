@@ -28,6 +28,10 @@ rule all:
         "data/Weger18_Liver_F/label_expression.num_reads.txt",
         "data/Weger18_Liver_F/salmon.meta_info.json",
         "data/Weger18_Liver_F/jtk/JTKresult_expression.tpm.txt",
+        "data/Zhang14_RNAseq_Liver_M/label_expression.tpm.txt",
+        "data/Zhang14_RNAseq_Liver_M/label_expression.num_reads.txt",
+        "data/Zhang14_RNAseq_Liver_M/salmon.meta_info.json",
+        "data/Zhang14_RNAseq_Liver_M/jtk/JTKresult_expression.tpm.txt",
         "results/qc.percent_mapping.png",
 
 rule get_series_matrix:
