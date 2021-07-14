@@ -83,13 +83,18 @@ rule download_sra_files:
     output:
         directory("data/{study}/SRA/{sample}/")
     message:
-        "Fetching SRA files for {wildcards.study}"
+        "Fetching SRA files for {wildcards.study}:{wildcards.sample}"
+    resources:
+        ncbi_download=1,
     run:
         pathlib.Path(output[0]).mkdir(exist_ok=True)
+        srrfile = f"data/{wildcards.study}/samples/{wildcards.sample}/SRR.txt"
         with pathlib.Path(input[0]).open() as srx_file:
             srx = srx_file.read().strip()
         if srx != '':
-            shell(f"prefetch -O data/{wildcards.study}/SRA/{wildcards.sample}/ {srx}")
+            # First get the SRR numbers from the SRX
+            shell(f'efetch -db sra -format runinfo -id {srx} | grep -oh "^SRR[0-9]\\+" > {srrfile}')
+            shell(f"prefetch -O data/{wildcards.study}/SRA/{wildcards.sample}/ `cat {srrfile}`")
 
 rule extract_fastq:
     input:
