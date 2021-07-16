@@ -4,7 +4,7 @@ import re
 import pandas
 from  scripts.process_series_matrix import process_series_matrix
 
-from studies import targets, studies
+from studies import targets, studies, sample_timepoints
 
 wildcard_constraints:
     sample = "GSM(\d+)"
@@ -15,7 +15,7 @@ rule all:
         expand("data/{study}/label_expression.tpm.txt", study=studies),
         expand("data/{study}/jtk/JTKresult_expression.tpm.txt", study=studies),
         "results/qc.percent_mapping.png",
-        #"results/plot_arntl.png",
+        "results/plot_Arntl.png",
 
 rule get_series_matrix:
     output:
@@ -54,6 +54,8 @@ checkpoint split_samples:
         print("Sample data", sample_data.source_name_ch1)
         selector = targets[wildcards.study]['sample_selector']
         SRX = {row['geo_accession']:row['SRX'] for i, row in sample_data.iterrows() if selector(row)}
+        if len(SRX) == 0:
+            raise Exception(f"No samples selected for {wildcards.study}")
         for sample, srx in SRX.items():
             print(f"Processing {sample}, {srx}")
             sample_dir = (outdir / sample)
@@ -64,7 +66,7 @@ rule download_sra_files:
     input:
         "data/{study}/samples/{sample}/SRX.txt"
     output:
-        directory("data/{study}/SRA/{sample}/")
+        temp(directory("data/{study}/SRA/{sample}/"))
     message:
         "Fetching SRA files for {wildcards.study}:{wildcards.sample}"
     resources:
@@ -83,7 +85,7 @@ rule extract_fastq:
     input:
         "data/{study}/SRA/{sample}"
     output:
-        directory("data/{study}/fastq/{sample}")
+        temp(directory("data/{study}/fastq/{sample}"))
     message:
         "Extracting SRA to FastQ for {wildcards.study} {wildcards.sample}"
     shell:
@@ -117,8 +119,12 @@ rule run_salmon:
     threads: 6
     resources:
         mem_mb=25000,
-    shell:
-        "salmon quant -i {input[1]} -g {params.gtf_file} {params.args} -1 {input[0]}/*_1.fastq -2 {input[0]}/*_2.fastq -o {output[1]}"
+    run:
+        fastqdir=pathlib.Path(input[0])
+        if len(list(fastqdir.glob("*_2.fastq")))>0:
+            shell(f"salmon quant -i {input[1]} -g {params.gtf_file} {params.args} -1 {input[0]}/*_1.fastq -2 {input[0]}/*_2.fastq -o {output[1]}")
+        else:
+            shell(f"salmon quant -i {input[1]} -g {params.gtf_file} {params.args} -r {input[0]}/*_1.fastq -o {output[1]}")
 
 def all_selected_samples(study):
     ''' List all selected sample identifiers for a study '''
@@ -190,13 +196,6 @@ rule label_data:
         num_reads.insert(1, 'GeneSymbol', num_reads['ID'].map(gene_name_from_id))
         num_reads.to_csv(output[1], sep ="\t", index=False)
 
-def sample_timepoints(study):
-    sample_data = pandas.read_csv(f"data/{study}/sample_data.txt", sep="\t", index_col="geo_accession")
-    expression_table = pandas.read_csv(f"data/{study}/expression.tpm.txt", sep="\t", index_col=0)
-    times = targets[study]["time"](sample_data, expression_table)
-    times = [int(re.search("[ZC]T(\d+)", time).groups()[0]) for time in times]
-    return times
-
 rule run_JTK:
     input:
         "data/{study}/expression.tpm.txt",
@@ -221,12 +220,23 @@ rule plot_qc:
     script:
         "scripts/qc_plots.py"
 
-rule plot_arntl:
+rule plot_genes:
     input:
         expression_tpm = expand("data/{study}/label_expression.tpm.txt", study=studies),
     params:
         studies = studies,
+        genes_ID = ["ENSMUSG00000055116", "ENSMUSG00000020038", "ENSMUSG00000068742", "ENSMUSG00000020893", "ENSMUSG00000055866", "ENSMUSG00000028957", "ENSMUSG00000020889", "ENSMUSG00000021775", "ENSMUSG00000059824", "ENSMUSG00000029238"], 
+        genes_symbol = ["Arntl", "Cry1", "Cry2", "Per1", "Per2", "Per3", "Nr1d1", "Nr1d2", "Dbp", "Clock"]
     output:
-        arntl_expression_tpm = "results/plot_arntl.png",
+        ENSMUSG00000055116 = "results/plot_Arntl.png",
+        ENSMUSG00000020038 = "results/plot_Cry1.png",
+        ENSMUSG00000068742 = "results/plot_Cry2.png",
+        ENSMUSG00000020893 = "results/plot_Per1.png",
+        ENSMUSG00000055866 = "results/plot_Per2.png",
+        ENSMUSG00000028957 = "results/plot_Per3.png",
+        ENSMUSG00000020889 = "results/plot_Nr1d1.png",
+        ENSMUSG00000021775 = "results/plot_Nr1d2.png",
+        ENSMUSG00000059824 = "results/plot_Dbp.png",
+        ENSMUSG00000029238 = "results/plot_Clock.png",
     script:
-        "scripts/arntl_plots.py"
+        "scripts/gene_plots.py"
