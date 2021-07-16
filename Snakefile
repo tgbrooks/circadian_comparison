@@ -16,6 +16,7 @@ rule all:
         expand("data/{study}/jtk/JTKresult_expression.tpm.txt", study=studies),
         "results/qc.percent_mapping.png",
         "results/plot_Arntl.png",
+        "results/jtk/breakdowns.png",
 
 rule get_series_matrix:
     output:
@@ -240,3 +241,16 @@ rule plot_genes:
         ENSMUSG00000029238 = "results/plot_Clock.png",
     script:
         "scripts/gene_plots.py"
+
+rule plot_jtk:
+    input:
+        jtk = expand("data/{study}/jtk/JTKresult_expression.tpm.txt", study=studies),
+    params:
+        studies = studies,
+    output:
+        breakdowns = "results/jtk/breakdowns.png",
+        periods = "results/jtk/periods.png",
+        amplitudes = "results/jtk/amplitudes.png",
+        phases = "results/jtk/phases.png",
+    script:
+        "scripts/plot_jtk.py"
