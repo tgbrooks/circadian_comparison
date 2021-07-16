@@ -4,6 +4,9 @@ index/*
 __pycache__
 *.swp
 *.swa
+*.pyc
+*.egg-info
 .snakemake
 venv
 logs
+gene_name.txt
