@@ -48,3 +48,24 @@ ax.set_ylabel("Num Reads Total (M)")
 ax.set_yscale("log")
 fig.tight_layout()
 fig.savefig(snakemake.output.num_processed, dpi=DPI)
+
+genes_ID = ["ENSMUSG00000086503","ENSMUSG00000029368"]
+genes_symbol = ["Xist", "Alb"]
+counter = 0
+for gene in genes_ID:
+    name = genes_symbol[counter]
+    fig, ax = pylab.subplots(figsize=(0.7*N_studies+0.7,4))
+    expression_data = []
+    for study in studies:
+        tpm = pandas.read_csv(f"data/{study}/expression.tpm.txt", sep="\t", index_col=0)
+        expression_data.append(tpm.loc[gene])
+    ax.boxplot(expression_data)
+
+    ax.set_xticks(numpy.arange(N_studies)+1)
+    ax.set_xticklabels(studies, rotation=90)
+    ax.set_ylabel(name + " Expression")
+    ax.set_title(gene)
+    fig.tight_layout()
+    fig.savefig(snakemake.output[gene], dpi=DPI)
+    counter += 1
+
