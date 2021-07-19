@@ -34,7 +34,6 @@ for gene in genes_ID:
         ax.scatter(time_data,expression_data, label=study, s=17)
 
     ax.set_xticks(numpy.arange(0, 24, step=3))
-    #ax.set_xticklabels(Times, rotation=90)
     ax.set_xlabel("Time")
     ax.set_ylabel(name + " Expression TPM")
     ax.set_title(gene)
