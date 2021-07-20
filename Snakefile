@@ -17,6 +17,9 @@ rule all:
         "results/qc.percent_mapping.png",
         "results/plot_Arntl.png",
         "results/jtk/breakdowns.png",
+        "results/qc.Xist_expression.png",
+        "results/num_common_genes.txt",
+        "results/PCA/all_samples.png", 
 
 rule get_series_matrix:
     output:
@@ -212,12 +215,15 @@ rule run_JTK:
 rule plot_qc:
     input:
         salmon_metainfo = expand("data/{study}/salmon.meta_info.json", study=studies),
+        expression_tpm = expand("data/{study}/label_expression.tpm.txt", study=studies),
     params:
         studies = studies,
     output:
         percent_mapping = "results/qc.percent_mapping.png",
         num_processed = "results/qc.num_processed.png",
         num_mapped = "results/qc.num_mapped.png",
+        ENSMUSG00000086503 = "results/qc.Xist_expression.png", 
+        ENSMUSG00000029368 = "results/qc.Alb_expression.png",
     script:
         "scripts/qc_plots.py"
 
@@ -254,3 +260,24 @@ rule plot_jtk:
         phases = "results/jtk/phases.png",
     script:
         "scripts/plot_jtk.py"
+
+rule plot_overlapped_genes: 
+    input: 
+        jtk = expand("data/{study}/jtk/JTKresult_expression.tpm.txt", study=studies),
+    params: 
+        studies = studies, 
+    output: 
+        num_common_genes = "results/num_common_genes.txt",
+        common_genes_pvalue = "results/common_genes_pvalue.txt", 
+    script: 
+        "scripts/plot_overlapped_genes.py"
+
+rule plot_PCA:
+    input:
+        tpm = expand("data/{study}/expression.tpm.txt", study=studies),
+    params: 
+        studies = studies, 
+    output: 
+        all_samples = "results/PCA/all_samples.png", 
+    script: 
+        "scripts/plot_PCA.py"
