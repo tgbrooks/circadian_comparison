@@ -9,7 +9,7 @@ def morton20_time(times):
 
 def sample_timepoints(study):
     sample_data = pandas.read_csv(f"data/{study}/sample_data.txt", sep="\t", index_col="geo_accession")
-    expression_table = pandas.read_csv(f"data/{study}/expression.tpm.txt", sep="\t", index_col=0)
+    expression_table = pandas.read_csv(f"data/{study}/expression.tpm.txt", sep="\t", index_col=0, nrows=5)
     times = targets[study]["time"](sample_data, expression_table)
     return times
 
