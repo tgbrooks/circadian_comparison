@@ -219,11 +219,14 @@ rule plot_qc:
     params:
         studies = studies,
     output:
-        percent_mapping = "results/qc.percent_mapping.png",
-        num_processed = "results/qc.num_processed.png",
-        num_mapped = "results/qc.num_mapped.png",
-        ENSMUSG00000086503 = "results/qc.Xist_expression.png", 
-        ENSMUSG00000029368 = "results/qc.Alb_expression.png",
+        percent_mapping = "results/qc/percent_mapping.png",
+        num_processed = "results/qc/num_processed.png",
+        num_mapped = "results/qc/num_mapped.png",
+        ENSMUSG00000086503 = "results/qc/Xist_expression.png",
+        ENSMUSG00000029368 = "results/qc/Alb_expression.png",
+        ENSMUSG00000064337  = "results/qc/mtRnr1_expression.png",
+        ENSMUSG00000064339 = "results/qc/mtRnr2_expression.png",
+        ENSMUSG00000064336 = "results/qc/mtTf_expression.png",
     script:
         "scripts/qc_plots.py"
 
@@ -232,7 +235,7 @@ rule plot_genes:
         expression_tpm = expand("data/{study}/label_expression.tpm.txt", study=studies),
     params:
         studies = studies,
-        genes_ID = ["ENSMUSG00000055116", "ENSMUSG00000020038", "ENSMUSG00000068742", "ENSMUSG00000020893", "ENSMUSG00000055866", "ENSMUSG00000028957", "ENSMUSG00000020889", "ENSMUSG00000021775", "ENSMUSG00000059824", "ENSMUSG00000029238"], 
+        genes_ID = ["ENSMUSG00000055116", "ENSMUSG00000020038", "ENSMUSG00000068742", "ENSMUSG00000020893", "ENSMUSG00000055866", "ENSMUSG00000028957", "ENSMUSG00000020889", "ENSMUSG00000021775", "ENSMUSG00000059824", "ENSMUSG00000029238"],
         genes_symbol = ["Arntl", "Cry1", "Cry2", "Per1", "Per2", "Per3", "Nr1d1", "Nr1d2", "Dbp", "Clock"]
     output:
         ENSMUSG00000055116 = "results/plot_Arntl.png",
@@ -261,23 +264,24 @@ rule plot_jtk:
     script:
         "scripts/plot_jtk.py"
 
-rule plot_overlapped_genes: 
-    input: 
+rule plot_overlapped_genes:
+    input:
         jtk = expand("data/{study}/jtk/JTKresult_expression.tpm.txt", study=studies),
-    params: 
-        studies = studies, 
-    output: 
+    params:
+        studies = studies,
+    output:
         num_common_genes = "results/num_common_genes.txt",
-        common_genes_pvalue = "results/common_genes_pvalue.txt", 
-    script: 
+        common_genes_pvalue = "results/common_genes_pvalue.txt",
+    script:
         "scripts/plot_overlapped_genes.py"
 
 rule plot_PCA:
     input:
         tpm = expand("data/{study}/expression.tpm.txt", study=studies),
-    params: 
-        studies = studies, 
-    output: 
-        all_samples = "results/PCA/all_samples.png", 
-    script: 
+    params:
+        studies = studies,
+    output:
+        all_samples_study = "results/PCA/all_samples_study.png",
+        all_samples_time = "results/PCA/all_samples_time.png",
+    script:
         "scripts/plot_PCA.py"
