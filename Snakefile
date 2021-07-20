@@ -14,12 +14,12 @@ rule all:
         expand("data/{study}/sample_data.txt", study=targets.keys()),
         expand("data/{study}/label_expression.tpm.txt", study=studies),
         expand("data/{study}/jtk/JTKresult_expression.tpm.txt", study=studies),
-        "results/qc.percent_mapping.png",
+        "results/qc/percent_mapping.png",
         "results/plot_Arntl.png",
         "results/jtk/breakdowns.png",
-        "results/qc.Xist_expression.png",
+        "results/qc/Xist_expression.png",
         "results/num_common_genes.txt",
-        "results/PCA/all_samples.png", 
+        "results/PCA/all_samples_study.png",
 
 rule get_series_matrix:
     output:

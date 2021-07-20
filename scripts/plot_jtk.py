@@ -72,7 +72,7 @@ util.legend_from_colormap(fig, color_by_strictness, names={s:f"Q < {c:0.2f}" for
 fig.tight_layout()
 fig.savefig(snakemake.output.periods, dpi=DPI)
 
-# Histogram of phases 
+# Histogram of phases
 fig, axes = pylab.subplots(figsize=(6,0.7+0.7*N_studies), nrows=N_studies, sharex=True)
 bins = numpy.linspace(0,24,25)
 for strictness, phases_ in phases.items():
@@ -86,7 +86,7 @@ util.legend_from_colormap(fig, color_by_strictness, names={s:f"Q < {c:0.2f}" for
 fig.tight_layout()
 fig.savefig(snakemake.output.phases, dpi=DPI)
 
-# Histogram of amplitudes 
+# Histogram of amplitudes
 fig, axes = pylab.subplots(figsize=(6,0.7+0.7*N_studies), nrows=N_studies, sharex=True)
 bins = numpy.logspace(-1,4, 51)
 for strictness, amplitudes_ in amplitudes.items():
