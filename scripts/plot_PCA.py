@@ -30,7 +30,8 @@ metadata_df = pandas.concat(metadata, axis=0)
 data_df = data_df[~(data_df == 0).all(axis=1)]
 print(f"data has shape {data_df.shape}")
 
-color_by_study = dict(zip(metadata_df.study.unique(), [pylab.get_cmap("tab10")(i) for i in range(10)]))
+used_studies = metadata_df.study.unique()
+color_by_study = dict(zip(used_studies, [pylab.get_cmap("tab20")(i%20) for i in range(len(used_studies))]))
 colors = metadata_df.study.map(color_by_study)
 log_data = numpy.log(data_df+1)
 PCA = sm.PCA(log_data.T, ncomp=2, method="nipals")
