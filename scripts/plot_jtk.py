@@ -56,7 +56,7 @@ for study, bds in breakdowns.items():
     ax.set_xscale("log")
 ax.set_xlabel("Q-value cutoff")
 ax.set_ylabel("Number of Genes")
-fig.legend()
+fig.legend(fontsize = 'x-small')
 fig.tight_layout()
 fig.savefig(snakemake.output.breakdowns, dpi=DPI)
 
