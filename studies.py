@@ -4,7 +4,7 @@ def extract_ctzt(times):
     return [int(re.search("[ZC]T(\d+)", time).groups()[0]) for time in times]
 def manella21_time(times):
     return [int(re.search("(\d+)[AB]", time).groups()[0]) for time in times]
-def morton20_time(times):
+def only_number(times):
     return [int(re.search("(\d+)", time).groups()[0]) for time in times]
 
 def sample_timepoints(study):
@@ -19,9 +19,22 @@ targets = {
         "sample_selector": lambda x: True,
     },
 
-    "Yang16A": {
+    "Yang16A_M": {
         "GSE": "GSE70497",
-        "sample_selector": lambda x: x.genotype == "WT",
+        "sample_selector": lambda x: x['genotype/variation'] == "WT",
+        "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns]['sample collection time'])),
+    },
+
+    "Yang16B_M": {
+        "GSE": "GSE70499",
+        "sample_selector": lambda x: x['genotype/variation'] == "WT" and x.Sex == "male",
+        "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns]['sample collection time'])),
+    },
+
+    "Yang16B_F": {
+        "GSE": "GSE70499",
+        "sample_selector": lambda x: x['genotype/variation'] == "WT" and x.Sex == "female",
+        "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns]['sample collection time'])),
     },
 
     "Lahens15": {
@@ -63,7 +76,7 @@ targets = {
     "Morton20_Liver": {
         "GSE": "GSE151565",
         "sample_selector": lambda x: x.genotype =="Wild type" and x.tissue == "Liver",
-        "time": lambda sample_data, expression_table: morton20_time(list(sample_data.loc[expression_table.columns]['time point'])),
+        "time": lambda sample_data, expression_table: only_number(list(sample_data.loc[expression_table.columns]['time point'])),
     },
 
     "Atger15_AdLib": {
@@ -91,7 +104,43 @@ targets = {
         "time": lambda sample_data, expression_table: manella21_time(list(sample_data.loc[expression_table.columns].title)),
     },
 
+    "Guan20_Liver": {
+        "GSE": "GSE143524",
+        "sample_selector": lambda x: x['genotype/variation'] == "WT" and x.tissue == "Liver" and x.description == "Ad_lib_feeding",
+        "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns].title)),
+    },
+
+    "Koronowski19_F": {
+        "GSE": "GSE117134",
+        "sample_selector": lambda x: x['genotype/variation'] == "WT",
+        "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns]['time of harvest'])),
+    },
+
+    "Meng20": {
+        "GSE": "GSE150888",
+        "sample_selector": lambda x: x.genotype == "Xbp1 flx/flx (WT, wild-type)",
+        "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns]['time point'])),
+    },
+
+    "Xin21_Liver_NightFeed": {
+        "GSE": "GSE150380",
+        "sample_selector": lambda x: x['dietary regimen'] == "NRF",
+        "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns]['zeitgeber time in hours'])),
+    },
+
+    "Yang20": {
+        "GSE": "GSE115264",
+        "sample_selector": lambda x: x.genotype == "WT",
+        "time": lambda sample_data, expression_table: list(sample_data.loc[expression_table.columns]['sample collection time']),
+    },
+
+    "Kinouchi18_Liver": {
+        "GSE": "GSE107787",
+        "sample_selector": lambda x: x.source_name_ch1 == "Liver" and "ad libitum" in x['timepoint/condition'],
+        "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns].title)),
+    },
+
 }
 
 # List of studies to perform
-studies = ["Lahens15", "Weger18_Liver_M", "Weger18_Liver_F", "Zhang14_RNAseq_Liver_M", "Pan19", "Morton20_Liver", "Atger15_AdLib", "Atger15_NightFeed", "Manella21_Liver", "Weger18"]
+studies = ["Lahens15", "Weger18_Liver_M", "Weger18_Liver_F", "Zhang14_RNAseq_Liver_M", "Pan19", "Morton20_Liver", "Atger15_AdLib", "Atger15_NightFeed", "Manella21_Liver", "Weger18", "Yang16A_M", "Yang16B_M", "Yang16B_F", "Guan20_Liver", "Koronowski19_F", "Meng20", "Xin21_Liver_NightFeed", "Yang20", "Kinouchi18_Liver"]
