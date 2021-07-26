@@ -20,6 +20,9 @@ rule all:
         "results/qc/Xist_expression.png",
         "results/num_common_genes.txt",
         "results/PCA/all_samples_study.png",
+        "results/robustness/expression_level_robust.png",
+        #"data/Meng20/fastq/GSM4560248",
+        #"data/Pan19/fastq/GSM3755746",
 
 rule get_series_matrix:
     output:
@@ -273,6 +276,7 @@ rule plot_overlapped_genes:
     output:
         num_common_genes = "results/num_common_genes.txt",
         common_genes_pvalue = "results/common_genes_pvalue.txt",
+        robustness_score = "results/robustness_score.txt",
     script:
         "scripts/plot_overlapped_genes.py"
 
@@ -281,8 +285,25 @@ rule plot_PCA:
         tpm = expand("data/{study}/expression.tpm.txt", study=studies),
     params:
         studies = studies,
+    resources:
+        mem_mb = 6000,
     output:
         all_samples_study = "results/PCA/all_samples_study.png",
         all_samples_time = "results/PCA/all_samples_time.png",
     script:
         "scripts/plot_PCA.py"
+
+rule robustness:
+    input:
+        robustness = "results/robustness_score.txt",
+        tpm = expand("data/{study}/expression.tpm.txt",study=studies),
+        jtk = expand("data/{study}/jtk/JTKresult_expression.tpm.txt", study=studies),
+    params:
+        studies = studies,
+    output:
+        expression_level = "results/robustness/expression_level_robust.png",
+        amplitude = "results/robustness/amplitude_robust.png",
+        period = "results/robustness/period_robust.png",
+        phase = "results/robustness/phase_robust.png",
+    script:
+        "scripts/plot_robustness.py"
