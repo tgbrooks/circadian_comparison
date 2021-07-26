@@ -38,6 +38,8 @@ PCA = sm.PCA(log_data.T, ncomp=2, method="nipals")
 
 fig, ax = pylab.subplots(figsize=(12,12))
 ax.scatter(PCA.factors["comp_0"], PCA.factors["comp_1"], c=colors)
+ax.set_xlabel(f"PCA 1 ({PCA.rsquare[1]:0.0%})")
+ax.set_ylabel(f"PCA 2 ({PCA.rsquare[2] - PCA.rsquare[1]:0.0%})")
 util.legend_from_colormap(fig, color_by_study)
 fig.savefig(snakemake.output.all_samples_study, dpi=DPI)
 
@@ -45,5 +47,7 @@ colors=metadata_df.time%24
 
 fig, ax = pylab.subplots(figsize=(12,12))
 h=ax.scatter(PCA.factors["comp_0"], PCA.factors["comp_1"], c=colors)
+ax.set_xlabel(f"PCA 1 ({PCA.rsquare[1]:0.0%})")
+ax.set_ylabel(f"PCA 2 ({PCA.rsquare[2] - PCA.rsquare[1]:0.0%})")
 fig.colorbar(h)
 fig.savefig(snakemake.output.all_samples_time, dpi=DPI)
