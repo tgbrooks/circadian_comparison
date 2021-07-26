@@ -30,7 +30,8 @@ rule get_series_matrix:
         # Like GSE1nnn, the folder where the GSE series matrix resides
         GSE = targets[wildcards.study]['GSE']
         gse_folder = GSE[:-3]+"nnn"
-        shell(f"wget ftp://ftp.ncbi.nlm.nih.gov/geo/series/{gse_folder}/{GSE}/matrix/{GSE}_series_matrix.txt.gz -O {output}")
+        postfix = targets[wildcards.study].get('GSE_postfix', '')
+        shell(f"wget ftp://ftp.ncbi.nlm.nih.gov/geo/series/{gse_folder}/{GSE}/matrix/{GSE}{postfix}_series_matrix.txt.gz -O {output}")
 
 rule process_series_matrix:
     input:
