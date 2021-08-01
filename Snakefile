@@ -4,25 +4,31 @@ import re
 import pandas
 from  scripts.process_series_matrix import process_series_matrix
 
-from studies import targets, studies, sample_timepoints
+from studies import targets, studies, sample_timepoints, tissues
 
 wildcard_constraints:
-    sample = "GSM(\d+)"
+    sample = "GSM(\d+)",
 
 rule all:
     input:
+        # All study-level files:
         expand("data/{study}/sample_data.txt", study=targets.keys()),
         expand("data/{study}/label_expression.tpm.txt", study=studies),
         expand("data/{study}/jtk/JTKresult_expression.tpm.txt", study=studies),
-        "results/qc/percent_mapping.png",
-        "results/plot_Arntl.png",
-        "results/jtk/breakdowns.png",
-        "results/qc/Xist_expression.png",
-        "results/num_common_genes.txt",
-        "results/PCA/all_samples_study.png",
-        "results/robustness/expression_level_robust.png",
-        #"data/Meng20/fastq/GSM4560248",
-        #"data/Pan19/fastq/GSM3755746",
+        # All tissue-level files:
+        expand("results/{tissue}/{file}",
+            tissue = tissues,
+            file = [
+                "qc/percent_mapping.png",
+                "clock_genes/plot_Arntl.png",
+                "jtk/breakdowns.png",
+                "num_common_genes.txt",
+                "PCA/all_samples_study.png",
+                "robustness/expression_level_robust.png",
+                "tpm_all_samples.txt",
+                "amplitude_scatter_grid.png",
+            ]
+        )
 
 rule get_series_matrix:
     output:
@@ -98,7 +104,7 @@ rule extract_fastq:
         "Extracting SRA to FastQ for {wildcards.study} {wildcards.sample}"
     shell:
         # Note: Refer to https://edwards.sdsu.edu/research/fastq-dump/ for information about using fastq-dump properly
-        "fastq-dump --readids --skip-technical --split-files --clip -O data/{wildcards.study}/fastq/{wildcards.sample} {input}/*/*.sra"
+        "fastq-dump --readids --skip-technical --split-files --clip -F -I -O data/{wildcards.study}/fastq/{wildcards.sample} {input}/*/*.sra"
 
 rule generate_salmon_index:
     output:
@@ -220,17 +226,20 @@ rule plot_qc:
     input:
         salmon_metainfo = expand("data/{study}/salmon.meta_info.json", study=studies),
         expression_tpm = expand("data/{study}/label_expression.tpm.txt", study=studies),
+        tpm = "results/{tissue}/tpm_all_samples.txt",
+        sample_info = "results/{tissue}/all_samples_info.txt",
     params:
         studies = studies,
     output:
-        percent_mapping = "results/qc/percent_mapping.png",
-        num_processed = "results/qc/num_processed.png",
-        num_mapped = "results/qc/num_mapped.png",
-        ENSMUSG00000086503 = "results/qc/Xist_expression.png",
-        ENSMUSG00000029368 = "results/qc/Alb_expression.png",
-        ENSMUSG00000064337  = "results/qc/mtRnr1_expression.png",
-        ENSMUSG00000064339 = "results/qc/mtRnr2_expression.png",
-        ENSMUSG00000064336 = "results/qc/mtTf_expression.png",
+        percent_mapping = "results/{tissue}/qc/percent_mapping.png",
+        num_processed = "results/{tissue}/qc/num_processed.png",
+        num_mapped = "results/{tissue}/qc/num_mapped.png",
+        expression_distributions = "results/{tissue}/qc/expression_distributions.png",
+        ENSMUSG00000086503 = "results/{tissue}/qc/Xist_expression.png",
+        ENSMUSG00000029368 = "results/{tissue}/qc/Alb_expression.png",
+        ENSMUSG00000064337  = "results/{tissue}/qc/mtRnr1_expression.png",
+        ENSMUSG00000064339 = "results/{tissue}/qc/mtRnr2_expression.png",
+        ENSMUSG00000064336 = "results/{tissue}/qc/mtTf_expression.png",
     script:
         "scripts/qc_plots.py"
 
@@ -242,16 +251,26 @@ rule plot_genes:
         genes_ID = ["ENSMUSG00000055116", "ENSMUSG00000020038", "ENSMUSG00000068742", "ENSMUSG00000020893", "ENSMUSG00000055866", "ENSMUSG00000028957", "ENSMUSG00000020889", "ENSMUSG00000021775", "ENSMUSG00000059824", "ENSMUSG00000029238"],
         genes_symbol = ["Arntl", "Cry1", "Cry2", "Per1", "Per2", "Per3", "Nr1d1", "Nr1d2", "Dbp", "Clock"]
     output:
-        ENSMUSG00000055116 = "results/plot_Arntl.png",
-        ENSMUSG00000020038 = "results/plot_Cry1.png",
-        ENSMUSG00000068742 = "results/plot_Cry2.png",
-        ENSMUSG00000020893 = "results/plot_Per1.png",
-        ENSMUSG00000055866 = "results/plot_Per2.png",
-        ENSMUSG00000028957 = "results/plot_Per3.png",
-        ENSMUSG00000020889 = "results/plot_Nr1d1.png",
-        ENSMUSG00000021775 = "results/plot_Nr1d2.png",
-        ENSMUSG00000059824 = "results/plot_Dbp.png",
-        ENSMUSG00000029238 = "results/plot_Clock.png",
+        ENSMUSG00000055116 = "results/{tissue}/clock_genes/plot_Arntl.png",
+        ENSMUSG00000020038 = "results/{tissue}/clock_genes/plot_Cry1.png",
+        ENSMUSG00000068742 = "results/{tissue}/clock_genes/plot_Cry2.png",
+        ENSMUSG00000020893 = "results/{tissue}/clock_genes/plot_Per1.png",
+        ENSMUSG00000055866 = "results/{tissue}/clock_genes/plot_Per2.png",
+        ENSMUSG00000028957 = "results/{tissue}/clock_genes/plot_Per3.png",
+        ENSMUSG00000020889 = "results/{tissue}/clock_genes/plot_Nr1d1.png",
+        ENSMUSG00000021775 = "results/{tissue}/clock_genes/plot_Nr1d2.png",
+        ENSMUSG00000059824 = "results/{tissue}/clock_genes/plot_Dbp.png",
+        ENSMUSG00000029238 = "results/{tissue}/clock_genes/plot_Clock.png",
+        ENSMUSG00000055116mod24 = "results/{tissue}/genes24/plot_Arntl.png",
+        ENSMUSG00000020038mod24 = "results/{tissue}/genes24/plot_Cry1.png",
+        ENSMUSG00000068742mod24 = "results/{tissue}/genes24/plot_Cry2.png",
+        ENSMUSG00000020893mod24 = "results/{tissue}/genes24/plot_Per1.png",
+        ENSMUSG00000055866mod24 = "results/{tissue}/genes24/plot_Per2.png",
+        ENSMUSG00000028957mod24 = "results/{tissue}/genes24/plot_Per3.png",
+        ENSMUSG00000020889mod24 = "results/{tissue}/genes24/plot_Nr1d1.png",
+        ENSMUSG00000021775mod24 = "results/{tissue}/genes24/plot_Nr1d2.png",
+        ENSMUSG00000059824mod24 = "results/{tissue}/genes24/plot_Dbp.png",
+        ENSMUSG00000029238mod24 = "results/{tissue}/genes24/plot_Clock.png",
     script:
         "scripts/gene_plots.py"
 
@@ -261,22 +280,24 @@ rule plot_jtk:
     params:
         studies = studies,
     output:
-        breakdowns = "results/jtk/breakdowns.png",
-        periods = "results/jtk/periods.png",
-        amplitudes = "results/jtk/amplitudes.png",
-        phases = "results/jtk/phases.png",
+        breakdowns = "results/{tissue}/jtk/breakdowns.png",
+        periods = "results/{tissue}/jtk/periods.png",
+        amplitudes = "results/{tissue}/jtk/amplitudes.png",
+        phases = "results/{tissue}/jtk/phases.png",
     script:
         "scripts/plot_jtk.py"
 
 rule plot_overlapped_genes:
     input:
         jtk = expand("data/{study}/jtk/JTKresult_expression.tpm.txt", study=studies),
+        tpm = expand("data/{study}/expression.tpm.txt", study=studies),
     params:
         studies = studies,
     output:
-        num_common_genes = "results/num_common_genes.txt",
-        common_genes_pvalue = "results/common_genes_pvalue.txt",
-        robustness_score = "results/robustness_score.txt",
+        num_common_genes = "results/{tissue}/num_common_genes.txt",
+        common_genes_pvalue = "results/{tissue}/common_genes_pvalue.txt",
+        robustness_score = "results/{tissue}/robustness_score.txt",
+        heatmap = "results/{tissue}/common_genes_heatmap.png",
     script:
         "scripts/plot_overlapped_genes.py"
 
@@ -288,8 +309,8 @@ rule plot_PCA:
     resources:
         mem_mb = 6000,
     output:
-        all_samples_study = "results/PCA/all_samples_study.png",
-        all_samples_time = "results/PCA/all_samples_time.png",
+        all_samples_study = "results/{tissue}/PCA/all_samples_study.png",
+        all_samples_time = "results/{tissue}/PCA/all_samples_time.png",
     script:
         "scripts/plot_PCA.py"
 
@@ -301,9 +322,47 @@ rule robustness:
     params:
         studies = studies,
     output:
-        expression_level = "results/robustness/expression_level_robust.png",
-        amplitude = "results/robustness/amplitude_robust.png",
-        period = "results/robustness/period_robust.png",
-        phase = "results/robustness/phase_robust.png",
+        expression_level = "results/{tissue}/robustness/expression_level_robust.png",
+        amplitude = "results/{tissue}/robustness/amplitude_robust.png",
+        period = "results/{tissue}/robustness/period_robust.png",
+        phase = "results/{tissue}/robustness/phase_robust.png",
     script:
         "scripts/plot_robustness.py"
+
+rule all_samples:
+    input:
+        tpm = expand("data/{study}/expression.tpm.txt",study=studies),
+        num_reads = expand("data/{study}/expression.num_reads.txt",study=studies),
+    params:
+        studies = studies,
+    output:
+        tpm = "results/{tissue}/tpm_all_samples.txt",
+        num_reads = "results/{tissue}/num_reads_all_samples.txt",
+        sample_info = "results/{tissue}/all_samples_info.txt",
+    run:
+        all_tpm = pandas.DataFrame()
+        all_num_reads = pandas.DataFrame()
+        all_samples = []
+        for study, tpmfile in zip(studies, input.tpm):
+            if study == "Weger18":
+                continue
+            tpm = pandas.read_csv(tpmfile, sep="\t", index_col="Name")
+            time = sample_timepoints(study)
+            all_samples.append(pandas.DataFrame({
+            "study": [study for i in range(len(tpm.columns))],
+            "time": time
+            }, index=tpm.columns))
+            all_tpm = pandas.concat([all_tpm, tpm], axis=1)
+        all_tpm.insert(0, 'Symbol', pandas.read_csv("gene_name.txt", sep="\t", index_col="ID")['GeneSymbol'])
+        all_tpm.to_csv(output[0], sep ="\t", index="Name")
+        all_samples_concat = pandas.concat(all_samples, axis=0)
+        all_samples_df = pandas.DataFrame(all_samples_concat)
+        all_samples_df.to_csv(output[2], sep="\t")
+
+        for study, numreadsfile in zip(studies, input.num_reads):
+            if study == "Weger18":
+                continue
+            num_reads = pandas.read_csv(numreadsfile, sep="\t", index_col="Name")
+            all_num_reads = pandas.concat([all_num_reads, num_reads], axis=1)
+        all_num_reads.insert(0, 'Symbol', pandas.read_csv("gene_name.txt", sep="\t", index_col="ID")['GeneSymbol'])
+        all_num_reads.to_csv(output[1], sep ="\t", index="Name")
