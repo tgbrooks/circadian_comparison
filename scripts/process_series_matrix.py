@@ -60,8 +60,10 @@ def process_series_matrix(series_matrix_path):
     for col in sample_data.columns:
         if col.startswith("relation"):
             srx = sample_data[col].map(extract_SRX)
+            valid = srx != ''
             if any(srx != ''):
-                sample_data['SRX'] = srx
+                sample_data.loc[valid, 'SRX'] = srx[valid]
+                print(f"Using column {col} for SRX extraction")
     print(f"Identified SRX values for {sum(sample_data.SRX != '')} samples")
 
     return series_data, sample_data
