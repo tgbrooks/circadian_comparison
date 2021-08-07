@@ -35,6 +35,8 @@ def process_series_matrix(series_matrix_path):
                     # Extract the specific characteristics out
                     values = [strip_quotes(value) for value in values]
                     for i, entry in enumerate(values):
+                        if not entry:
+                            continue # Skip empty entries
                         char_name, char_value = entry.split(":")
                         char_value = char_value.strip()
                         sample = sample_characteristics.get(i, {})
