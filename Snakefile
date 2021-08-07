@@ -373,3 +373,17 @@ rule all_samples:
             all_num_reads = pandas.concat([all_num_reads, num_reads], axis=1)
         all_num_reads.insert(0, 'Symbol', pandas.read_csv("gene_name.txt", sep="\t", index_col="ID")['GeneSymbol'])
         all_num_reads.to_csv(output[1], sep ="\t", index="Name")
+
+rule scatter_grid:
+    input:
+        jtk = expand("data/{study}/jtk/JTKresult_expression.tpm.txt", study=studies),
+    params:
+        studies = studies,
+    output:
+        amplitude = "results/{tissue}/amplitude_scatter_grid.png",
+        period = "results/{tissue}/period_scatter_grid.png",
+        phase = "results/{tissue}/phase_scatter_grid.png",
+    resources: 
+        mem_mb = 12000
+    script:
+        "scripts/plot_scatter_grid.py"
