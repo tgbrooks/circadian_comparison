@@ -100,6 +100,7 @@ rule extract_fastq:
         "data/{study}/SRA/{sample}"
     output:
         temp(directory("data/{study}/fastq/{sample}"))
+    priority: 10
     message:
         "Extracting SRA to FastQ for {wildcards.study} {wildcards.sample}"
     shell:
@@ -114,8 +115,8 @@ rule generate_salmon_index:
         mem_mb=70000,
     shell:
         "salmon index -p 16 -i {output} \
-             -t /project/itmatlab/for_dimitra/pseudoalign_benchmark/dimitra/RevisionBMC/annotation/salmon.index/Mus_musculus.GRCm38.75.TranscriptSeq.std.merged_with.dna.primary_assembly.fa \
-             -d /project/itmatlab/for_dimitra/pseudoalign_benchmark/dimitra/RevisionBMC/annotation/salmon.index/decoy_names.txt \
+             -t /project/itmatlab/index/SALMON-1.4.0/Mus_musculu.GRCm38.75/Mus_musculus.GRCm38.75.TranscriptSeq.std.merged_with.dna.primary_assembly.fa \
+             -d /project/itmatlab/index/SALMON-1.4.0/Mus_musculu.GRCm38.75/index/decoy_names.txt \
              -k {wildcards.k}"
 
 rule run_salmon:
@@ -240,6 +241,8 @@ rule plot_qc:
         ENSMUSG00000064337  = "results/{tissue}/qc/mtRnr1_expression.png",
         ENSMUSG00000064339 = "results/{tissue}/qc/mtRnr2_expression.png",
         ENSMUSG00000064336 = "results/{tissue}/qc/mtTf_expression.png",
+    resources:
+        mem_mb = 4000,
     script:
         "scripts/qc_plots.py"
 
@@ -271,6 +274,8 @@ rule plot_genes:
         ENSMUSG00000021775mod24 = "results/{tissue}/genes24/plot_Nr1d2.png",
         ENSMUSG00000059824mod24 = "results/{tissue}/genes24/plot_Dbp.png",
         ENSMUSG00000029238mod24 = "results/{tissue}/genes24/plot_Clock.png",
+    resources:
+        mem_mb = 4000,
     script:
         "scripts/gene_plots.py"
 
@@ -298,6 +303,8 @@ rule plot_overlapped_genes:
         common_genes_pvalue = "results/{tissue}/common_genes_pvalue.txt",
         robustness_score = "results/{tissue}/robustness_score.txt",
         heatmap = "results/{tissue}/common_genes_heatmap.png",
+    resources:
+        mem_mb = 4000
     script:
         "scripts/plot_overlapped_genes.py"
 
