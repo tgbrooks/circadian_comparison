@@ -31,7 +31,6 @@ fit_splines <- function(values, groups, times) {
                fixed=list(mesor~1),
                random=list(logAmp~1, phi~1, mesor~1),
                group=~group,
-               verbose=TRUE,
                start=c(mesor_guess),
                spar="m",
                control=list(converg="PRSS"),
@@ -42,7 +41,7 @@ fit_splines <- function(values, groups, times) {
     # as well as a 95% confidence interval
     curves <- data.frame(u=seq(from=0,to=1, length.out=24*4+1))
     curves.ci <- intervals(fit, newdata=curves)
-    curves$fit <- curves.ci$fit
+    curves$fit <- curves.ci$fit[,1]
     curves$pstd <- curves.ci$pstd
 
     # Time of peak of overall fit in hours since time 0
@@ -89,7 +88,7 @@ fit_splines <- function(values, groups, times) {
 
     return(list(
          summary = results,
-#         fit = fit,
+         fit = fit,
          random_effects = fit$coefficients$random$group,
          random_effects_structure = random_effs_structure,
          curves = curves

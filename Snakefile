@@ -6,6 +6,8 @@ from  scripts.process_series_matrix import process_series_matrix
 
 from studies import targets, studies, sample_timepoints, tissues
 
+SPLINE_FIT_N_BATCHES = 100
+
 wildcard_constraints:
     sample = "GSM(\d+)",
 
@@ -27,8 +29,9 @@ rule all:
                 "robustness/expression_level_robust.png",
                 "tpm_all_samples.txt",
                 "amplitude_scatter_grid.png",
+                "spline_fit/summary.txt",
             ]
-        )
+        ),
 
 rule get_series_matrix:
     output:
@@ -387,3 +390,40 @@ rule scatter_grid:
         mem_mb = 12000
     script:
         "scripts/plot_scatter_grid.py"
+
+rule run_spline_fit:
+    input:
+        tpm = "results/{tissue}/tpm_all_samples.txt",
+        sample_info = "results/{tissue}/all_samples_info.txt",
+    output:
+        summary = "results/{tissue}/spline_fit/batches/{batch}.summary.txt",
+        curves_fit = "results/{tissue}/spline_fit/batches/{batch}.curves_fit.txt",
+        curves_pstd = "results/{tissue}/spline_fit/batches/{batch}.curves_pstd.txt",
+        re = "results/{tissue}/spline_fit/batches/{batch}.re.txt",
+        re_structure = "results/{tissue}/spline_fit/batches/{batch}.re_structure.txt",
+    params:
+        num_batches = SPLINE_FIT_N_BATCHES
+    resources:
+        mem_mb = 4000
+    script:
+        "scripts/run_spline_fit.R"
+
+rule gather_spline_fits:
+    input:
+        summary = expand("results/{{tissue}}/spline_fit/batches/{batch}.summary.txt", batch=range(SPLINE_FIT_N_BATCHES)),
+        curves_fit = expand("results/{{tissue}}/spline_fit/batches/{batch}.curves_fit.txt", batch=range(SPLINE_FIT_N_BATCHES)),
+        curves_pstd = expand("results/{{tissue}}/spline_fit/batches/{batch}.curves_pstd.txt", batch=range(SPLINE_FIT_N_BATCHES)),
+        re = expand("results/{{tissue}}/spline_fit/batches/{batch}.re.txt", batch=range(SPLINE_FIT_N_BATCHES)),
+        re_structure = expand("results/{{tissue}}/spline_fit/batches/{batch}.re_structure.txt", batch=range(SPLINE_FIT_N_BATCHES)),
+    output:
+        summary = "results/{tissue}/spline_fit/summary.txt",
+        curves_fit = "results/{tissue}/spline_fit/curves_fit.txt",
+        curves_pstd = "results/{tissue}/spline_fit/curves_pstd.txt",
+        re = "results/{tissue}/spline_fit/re.txt",
+        re_structure = "results/{tissue}/spline_fit/re_structure.txt",
+    params:
+        num_batches = SPLINE_FIT_N_BATCHES
+    resources:
+        mem_mb = 4000
+    script:
+        "scripts/gather_spline_fits.py"
