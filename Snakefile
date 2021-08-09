@@ -323,7 +323,7 @@ rule plot_PCA:
 
 rule robustness:
     input:
-        robustness = "results/robustness_score.txt",
+        robustness = "results/{tissue}/robustness_score.txt",
         tpm = expand("data/{study}/expression.tpm.txt",study=studies),
         jtk = expand("data/{study}/jtk/JTKresult_expression.tpm.txt", study=studies),
     params:
