@@ -26,6 +26,14 @@ for study in studies:
 
 max_time = max(t for times in times_data.values() for t in times)
 
+# Determine styles for each study
+cmap = pylab.get_cmap("tab20")
+marker = ["o", "+", "s", "v", "x"]
+linestyles = ["-", "--", "-.", ".."]
+color = {study: cmap(i%20) for i, study in enumerate(studies)}
+shape = {study: marker[i//20] for i, study in enumerate(studies)}
+linestyle = {study: linestyles[i//20] for i, study in enumerate(studies)}
+
 # Plot genes two different ways:
 # - By collapsing periods onto each other by mod 24
 # - without collapsing periods onto each other
@@ -43,20 +51,20 @@ for name, gene in zip(genes_symbol, genes_ID):
         tpm = tpm_data[study]
         for col in tpm.columns:
             expression_data.append(tpm.loc[gene][col])
-        ax.scatter(time_data,expression_data, label=study, s=17)
-        ax1.scatter(time_mod24_data,expression_data, label=study, s=17)
+        ax.scatter(time_data,expression_data, label=study, s=17, marker=shape[study], color=color[study])
+        ax1.scatter(time_mod24_data,expression_data, label=study, s=17, marker=shape[study], color=color[study])
         expression_data_series=pandas.Series(expression_data)
         mean_by_time = expression_data_series.groupby(time_data).mean()
-        ax.plot(mean_by_time.index,mean_by_time)
+        ax.plot(mean_by_time.index,mean_by_time, color=color[study], linestyle=linestyle[study])
         mean_by_modtime = expression_data_series.groupby(time_mod24_data).mean()
-        ax1.plot(mean_by_modtime.index,mean_by_modtime)
+        ax1.plot(mean_by_modtime.index,mean_by_modtime, marker=shape[study], color=color[study])
 
     ax.set_xticks(numpy.arange(0, 72, step=3))
     ax.set_xlabel("Time")
     ax.set_ylabel(name + " Expression TPM")
     ax.set_title(f"{gene} | {name}")
     ax.margins(x=0.01)
-    fig.legend(fontsize = 'x-small')
+    fig.legend(fontsize = 'x-small', ncol=2)
     fig.tight_layout()
     fig.savefig(snakemake.output[gene], dpi=DPI)
 
@@ -65,6 +73,6 @@ for name, gene in zip(genes_symbol, genes_ID):
     ax1.set_ylabel(name + " Expression TPM")
     ax1.set_title(f"{gene} | {name}")
     ax1.margins(x=0.01)
-    fig1.legend(fontsize = 'x-small')
+    fig1.legend(fontsize = 'x-small',ncol=2)
     fig1.tight_layout()
     fig1.savefig(snakemake.output[gene+"mod24"], dpi=DPI)
