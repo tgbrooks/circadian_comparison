@@ -42,6 +42,7 @@ ax.set_xlabel(f"PCA 1 ({PCA.rsquare[1]:0.0%})")
 ax.set_ylabel(f"PCA 2 ({PCA.rsquare[2] - PCA.rsquare[1]:0.0%})")
 util.legend_from_colormap(fig, color_by_study)
 fig.savefig(snakemake.output.all_samples_study, dpi=DPI)
+fig.savefig(snakemake.output.all_samples_study_svg)
 
 colors=metadata_df.time%24
 
@@ -51,3 +52,4 @@ ax.set_xlabel(f"PCA 1 ({PCA.rsquare[1]:0.0%})")
 ax.set_ylabel(f"PCA 2 ({PCA.rsquare[2] - PCA.rsquare[1]:0.0%})")
 fig.colorbar(h)
 fig.savefig(snakemake.output.all_samples_time, dpi=DPI)
+fig.savefig(snakemake.output.all_samples_time_svg)

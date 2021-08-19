@@ -32,7 +32,7 @@ sample_table <- read_tsv(input[['sample_info']]) %>%
 
 # We don't use all studies
 # Some have a very different seuqencing methodoloy or bad alignment stats
-drop_studies <- c("Greenwell19_AdLIb", "Greenwell19_NightFeed", "Janich15", "Manella21_Liver")
+drop_studies <- c("Greenwell19_AdLib", "Greenwell19_NightFeed", "Janich15", "Manella21_Liver")
 selected_samples <- (sample_table %>% filter(!(study %in% drop_studies)))
 
 # Find genes passing an expression cutoff

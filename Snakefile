@@ -29,9 +29,10 @@ rule all:
                 "robustness/expression_level_robust.png",
                 "tpm_all_samples.txt",
                 "amplitude_scatter_grid.png",
-                "spline_fit/summary.txt",
+                #"spline_fit/summary.txt",
             ]
         ),
+        "results/Liver/spline_fit/summary.txt",
 
 rule get_series_matrix:
     output:
@@ -302,9 +303,10 @@ rule plot_overlapped_genes:
         jtk = lambda wildcards: expand("data/{study}/jtk/JTKresult_expression.tpm.txt", study=studies_by_tissue(wildcards.tissue)),
         tpm = lambda wildcards: expand("data/{study}/expression.tpm.txt", study=studies_by_tissue(wildcards.tissue)),
     params:
-        studies = studies,
+        studies = select_tissue(studies),
     output:
         num_common_genes = "results/{tissue}/num_common_genes.txt",
+        num_common_genes_heatmap = "results/{tissue}/num_common_genes_heatmap.png",
         common_genes_pvalue = "results/{tissue}/common_genes_pvalue.txt",
         robustness_score = "results/{tissue}/robustness_score.txt",
         heatmap = "results/{tissue}/common_genes_heatmap.png",
@@ -322,7 +324,9 @@ rule plot_PCA:
         mem_mb = 6000,
     output:
         all_samples_study = "results/{tissue}/PCA/all_samples_study.png",
+        all_samples_study_svg = "results/{tissue}/PCA/all_samples_study.svg",
         all_samples_time = "results/{tissue}/PCA/all_samples_time.png",
+        all_samples_time_svg = "results/{tissue}/PCA/all_samples_time.svg",
     script:
         "scripts/plot_PCA.py"
 

@@ -10,4 +10,7 @@ for file_type in file_types:
         data_list.append(pandas.read_csv(path, sep="\t"))
     df = pandas.concat(data_list, axis=0)
     print(f"Found {len(data_list)} files, with total of {len(df)} lines")
+    dupe_columns = df.columns.intersection(["gene", "study", "var"])
+    df.drop_duplicates(dupe_columns, inplace=True)
+    df.sort_values(by="gene", inplace=True)
     df.to_csv(f"results/Liver/spline_fit/{file_type}", sep="\t", index=False)

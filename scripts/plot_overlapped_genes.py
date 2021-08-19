@@ -2,15 +2,19 @@ import json
 import pathlib
 import pandas
 import numpy
+import scipy.cluster.hierarchy
 import matplotlib
 matplotlib.use("Agg")
 import pylab
 from studies import sample_timepoints
 import util
 
+DPI = 300
+
 studies = snakemake.params.studies
 N_studies = len(studies)
 
+# Load JTK values
 n_genes = 1000
 selected_genes = {}
 for study, jtkfile in zip(studies, snakemake.input.jtk):
@@ -18,6 +22,7 @@ for study, jtkfile in zip(studies, snakemake.input.jtk):
     jtk = jtk.sort_values("ADJ.P")
     selected_genes[study] = jtk.index[:n_genes]
 
+# Gather overlaps between each pair of studies in their top 1000 genes
 results = {}
 for study1 in studies: 
     study_results = {}
@@ -31,6 +36,22 @@ for study1 in studies:
 results_df = pandas.DataFrame(results)
 results_df.to_csv(snakemake.output.num_common_genes, sep="\t")
 
+# Plot these pair-wise overlaps
+study_clustering = scipy.cluster.hierarchy.linkage(results_df, optimal_ordering=True)
+study_ordering = scipy.cluster.hierarchy.leaves_list(study_clustering)
+study_order = results_df.index[study_ordering]
+fig, ax = pylab.subplots(figsize=(10,10))
+h = ax.imshow(results_df.loc[study_order,study_order])
+ax.xaxis.tick_top()
+ax.set_xticks(numpy.arange(len(study_order)))
+ax.set_xticklabels(study_order, rotation=90)
+ax.set_yticks(numpy.arange(len(study_order)))
+ax.set_yticklabels(study_order)
+fig.colorbar(h, fraction=0.03, label="Overlap (# genes)")
+fig.tight_layout()
+fig.savefig(snakemake.output.num_common_genes_heatmap, dpi=DPI)
+
+# Compute the robustness scores: number of studies where found significant
 p_value_cutoff = 0.05
 selected_genes = {}
 for study, jtkfile in zip(studies, snakemake.input.jtk):
@@ -42,6 +63,7 @@ for study, jtkfile in zip(studies, snakemake.input.jtk):
 
 robustness_score = pandas.Series(0, index=jtk.index)
 
+# Find intersection of all studies
 intersection = selected_genes[studies[2]]
 for study in selected_genes.keys():
     genes = selected_genes[study]
@@ -53,6 +75,7 @@ intersect_DF = pandas.DataFrame({"GeneID":intersection, "GeneSymbol":intersectio
 intersect_DF.to_csv(snakemake.output.common_genes_pvalue, sep="\t", index=False)
 robustness_score.to_csv(snakemake.output.robustness_score, sep="\t")
 
+# Heatmap of the genes common to all studies
 data = {}
 metadata = []
 for study, tpmfile in zip(studies, snakemake.input.tpm):

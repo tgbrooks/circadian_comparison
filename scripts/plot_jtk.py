@@ -1,4 +1,5 @@
 import json
+import math
 import pathlib
 import pandas
 import numpy
@@ -12,6 +13,7 @@ studies = snakemake.params.studies
 N_studies = len(studies)
 
 DPI = 300
+N_COLUMNS = 3
 # Q-value cutoff to call significantly rhythmic
 STRICT_Q_CUTOFF = 0.01
 LOOSE_Q_CUTOFF = 0.10
@@ -49,6 +51,7 @@ for study, jtkfile in zip(studies, snakemake.input.jtk):
         phases[strictness][study] = significant['LAG']
         amplitudes[strictness][study] = significant['AMP']
 
+
 #Q-value breakdowns
 fig, ax = pylab.subplots(figsize=(4,4))
 for study, bds in breakdowns.items():
@@ -60,41 +63,56 @@ fig.legend(fontsize = 'x-small')
 fig.tight_layout()
 fig.savefig(snakemake.output.breakdowns, dpi=DPI)
 
+# Exclude any studies from plotting if they have little significant at the looser cutoff
+include_studies = [study for study in studies if len(phases['loose'][study]) > 10]
+N_studies = len(include_studies)
+N_ROWS = math.ceil(N_studies / N_COLUMNS)
+remove_unplotted = slice(0,0) if N_studies == N_ROWS * N_COLUMNS else slice(-(N_ROWS * N_COLUMNS) - N_studies, None)
+
 # Histogram of periods
-fig, axes = pylab.subplots(figsize=(6,0.7+0.7*N_studies), nrows=N_studies, sharex=True)
+fig, axes = pylab.subplots(figsize=(1+5*N_COLUMNS,0.7+0.7*N_ROWS), nrows=N_ROWS, ncols=N_COLUMNS, sharex=True, squeeze=False)
 bins = numpy.linspace(19.5,28.5,10)
 for strictness, periods_ in periods.items():
-    for ax, (study, period) in zip(axes.flatten(), periods_.items()):
+    for ax, study in zip(axes.flatten(), include_studies):
+        period = periods_[study]
         ax.hist(period, bins=bins, color=color_by_strictness[strictness])
         ax.set_ylabel(study, rotation=0, horizontalalignment="right")
-axes[-1].set_xlabel("Period (hrs)")
+[ax.set_xlabel("Period (hrs)") for ax in axes[-1,:]]
+for ax in axes.flatten()[remove_unplotted]:
+    ax.remove()
 util.legend_from_colormap(fig, color_by_strictness, names={s:f"Q < {c:0.2f}" for s,c in Q_CUTOFFS.items()})
 fig.tight_layout()
 fig.savefig(snakemake.output.periods, dpi=DPI)
 
 # Histogram of phases
-fig, axes = pylab.subplots(figsize=(6,0.7+0.7*N_studies), nrows=N_studies, sharex=True)
+fig, axes = pylab.subplots(figsize=(1+5*N_COLUMNS,0.7+0.7*N_ROWS), nrows=N_ROWS, ncols=N_COLUMNS, sharex=True, squeeze=False)
 bins = numpy.linspace(0,24,25)
 for strictness, phases_ in phases.items():
-    for ax, (study, phase) in zip(axes.flatten(), phases_.items()):
+    for ax, study in zip(axes.flatten(), include_studies):
+        phase = phases_[study]
         ax.hist(phase, bins=bins, color=color_by_strictness[strictness])
         ax.set_ylabel(study, rotation=0, horizontalalignment="right")
         ax.set_xlim(0,24)
         ax.set_xticks(numpy.arange(0,30, 6))
-axes[-1].set_xlabel("Phase (hrs)")
+[ax.set_xlabel("Phase (hrs)") for ax in axes[-1,:]]
+for ax in axes.flatten()[remove_unplotted]:
+    ax.remove()
 util.legend_from_colormap(fig, color_by_strictness, names={s:f"Q < {c:0.2f}" for s,c in Q_CUTOFFS.items()})
 fig.tight_layout()
 fig.savefig(snakemake.output.phases, dpi=DPI)
 
 # Histogram of amplitudes
-fig, axes = pylab.subplots(figsize=(6,0.7+0.7*N_studies), nrows=N_studies, sharex=True)
+fig, axes = pylab.subplots(figsize=(1+5*N_COLUMNS,0.7+0.7*N_ROWS), nrows=N_ROWS, ncols=N_COLUMNS, sharex=True, squeeze=False)
 bins = numpy.logspace(-1,4, 51)
 for strictness, amplitudes_ in amplitudes.items():
-    for ax, (study, amplitude) in zip(axes.flatten(), amplitudes_.items()):
+    for ax, study in zip(axes.flatten(), include_studies):
+        amplitude = amplitudes_[study]
         ax.hist(amplitude, bins=bins, color=color_by_strictness[strictness])
         ax.set_ylabel(study, rotation=0, horizontalalignment="right")
         ax.set_xscale("log")
-axes[-1].set_xlabel("Amplitude (TPM)")
+[ax.set_xlabel("Amplitude (hrs)") for ax in axes[-1,:]]
+for ax in axes.flatten()[remove_unplotted]:
+    ax.remove()
 util.legend_from_colormap(fig, color_by_strictness, names={s:f"Q < {c:0.2f}" for s,c in Q_CUTOFFS.items()})
 fig.tight_layout()
 fig.savefig(snakemake.output.amplitudes, dpi=DPI)

@@ -16,23 +16,31 @@ genes_symbol = snakemake.params.genes_symbol
 READ_UNITS = 1e6 # Use millions of reads
 DPI = 300
 
-counter = 0
 
-for gene in genes_ID: 
-    fig, ax = pylab.subplots(figsize=(0.7*N_studies+0.7,4))
-    fig1, ax1 = pylab.subplots(figsize=(0.7*N_studies+0.7,4))
-    #fig2, ax2 = pylab.subplots(figsize=(0.7*N_studies+0.7,4))
-    name = genes_symbol[counter]
+# Load the data
+tpm_data = {}
+times_data = {}
+for study in studies:
+    tpm_data[study] = pandas.read_csv(f"data/{study}/expression.tpm.txt", sep="\t", index_col=0)
+    times_data[study] = sample_timepoints(study)
+
+max_time = max(t for times in times_data.values() for t in times)
+
+# Plot genes two different ways:
+# - By collapsing periods onto each other by mod 24
+# - without collapsing periods onto each other
+for name, gene in zip(genes_symbol, genes_ID): 
+    fig, ax = pylab.subplots(figsize=(2+max_time/6,4))
+    fig1, ax1 = pylab.subplots(figsize=(2+max_time/6,4))
     for study in studies:
         time_data = []
         time_mod24_data = []
         expression_data = []
-        times = sample_timepoints(study)
+        times = times_data[study]
         times_mod24 = [t % 24 for t in times]
-        print(times)
         time_data.extend(times)
         time_mod24_data.extend(times_mod24)
-        tpm = pandas.read_csv(f"data/{study}/expression.tpm.txt", sep="\t", index_col=0)
+        tpm = tpm_data[study]
         for col in tpm.columns:
             expression_data.append(tpm.loc[gene][col])
         ax.scatter(time_data,expression_data, label=study, s=17)
@@ -46,7 +54,8 @@ for gene in genes_ID:
     ax.set_xticks(numpy.arange(0, 72, step=3))
     ax.set_xlabel("Time")
     ax.set_ylabel(name + " Expression TPM")
-    ax.set_title(gene)
+    ax.set_title(f"{gene} | {name}")
+    ax.margins(x=0.01)
     fig.legend(fontsize = 'x-small')
     fig.tight_layout()
     fig.savefig(snakemake.output[gene], dpi=DPI)
@@ -54,8 +63,8 @@ for gene in genes_ID:
     ax1.set_xticks(numpy.arange(0, 24, step=3))
     ax1.set_xlabel("Time")
     ax1.set_ylabel(name + " Expression TPM")
-    ax1.set_title(gene)
+    ax1.set_title(f"{gene} | {name}")
+    ax1.margins(x=0.01)
     fig1.legend(fontsize = 'x-small')
     fig1.tight_layout()
     fig1.savefig(snakemake.output[gene+"mod24"], dpi=DPI)
-    counter +=1

@@ -64,10 +64,19 @@ data_df = pandas.concat(data.values(), axis=1)
 med_per = data_df.median(axis=1)
 #mean_per = scipy.stats.circmean(data_df, low=0, high=24, axis=1)
 
-fig, ax = pylab.subplots(figsize=(12,12))
-ax.scatter(med_per+numpy.random.normal(size=len(robustness_score))*0.2, robustness_score+numpy.random.normal(size=len(robustness_score))*0.2)
+fig, ax = pylab.subplots(figsize=(5,5))
+score_by_period = dict(list(robustness_score.groupby(med_per)))
+parts = ax.violinplot(
+    list(score_by_period.values()),
+    positions=list(score_by_period.keys()),
+    showextrema=False,
+    widths=0.8
+)
+for body in parts['bodies']:
+    body.set_alpha(1)
+#ax.scatter(med_per+numpy.random.normal(size=len(robustness_score))*0.2, robustness_score+numpy.random.normal(size=len(robustness_score))*0.2)
 #ax.set_xscale("log")
-ax.set_xlim(19,29)
+ax.set_xlim(19,25)
 ax.set_xlabel("Median Period")
 ax.set_ylabel("Robustness Score")
 fig.savefig(snakemake.output.period, dpi=DPI)
@@ -85,10 +94,22 @@ for study, phasefile in zip(studies, snakemake.input.jtk):
 data_df = pandas.concat(data.values(), axis=1)
 
 #med_phase = data_df.median(axis=1)
-mean_phase = scipy.stats.circmean(data_df, low=0, high=24, axis=1, nan_policy="omit")
+def round(x, to=1):
+    return numpy.round(x/to)*to
+mean_phase = round(scipy.stats.circmean(data_df, low=0, high=24, axis=1, nan_policy="omit"), to=2)
 
-fig, ax = pylab.subplots(figsize=(12,12))
-ax.scatter(mean_phase, robustness_score+numpy.random.normal(size=len(robustness_score))*0.2)
+#fig, ax = pylab.subplots(figsize=(12,12))
+#ax.scatter(mean_phase, robustness_score+numpy.random.normal(size=len(robustness_score))*0.2)
+fig, ax = pylab.subplots(figsize=(7,6))
+score_by_phase = dict(list(robustness_score.groupby(mean_phase)))
+parts = ax.violinplot(
+    list(score_by_phase.values()),
+    positions=list(score_by_phase.keys()),
+    showextrema=False,
+    widths=0.8
+)
+for body in parts['bodies']:
+    body.set_alpha(1)
 #ax.set_xscale("log")
 ax.set_xlabel("Mean Phase")
 ax.set_ylabel("Robustness Score")
