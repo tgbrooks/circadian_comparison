@@ -4,7 +4,7 @@ import re
 import pandas
 from  scripts.process_series_matrix import process_series_matrix
 
-from studies import targets, studies, sample_timepoints, tissues
+from studies import targets, studies, sample_timepoints, tissues, select_tissue, studies_by_tissue
 
 SPLINE_FIT_N_BATCHES = 100
 
@@ -228,20 +228,22 @@ rule run_JTK:
 
 rule plot_qc:
     input:
-        salmon_metainfo = expand("data/{study}/salmon.meta_info.json", study=studies),
-        expression_tpm = expand("data/{study}/label_expression.tpm.txt", study=studies),
+        salmon_metainfo = lambda wildcards: expand("data/{study}/salmon.meta_info.json", study=studies_by_tissue(wildcards.tissue)),
+        expression_tpm = lambda wildcards: expand("data/{study}/label_expression.tpm.txt", study=studies_by_tissue(wildcards.tissue)),
         tpm = "results/{tissue}/tpm_all_samples.txt",
         sample_info = "results/{tissue}/all_samples_info.txt",
     params:
-        studies = studies,
+        studies = select_tissue(studies),
     output:
         percent_mapping = "results/{tissue}/qc/percent_mapping.png",
         num_processed = "results/{tissue}/qc/num_processed.png",
         num_mapped = "results/{tissue}/qc/num_mapped.png",
         expression_distributions = "results/{tissue}/qc/expression_distributions.png",
         ENSMUSG00000086503 = "results/{tissue}/qc/Xist_expression.png",
+        ENSMUSG00000069036 = "results/{tissue}/qc/Sry_expression.png",
+        ENSMUSG00000048376 = "results/{tissue}/qc/F2r_expression.png",
         ENSMUSG00000029368 = "results/{tissue}/qc/Alb_expression.png",
-        ENSMUSG00000064337  = "results/{tissue}/qc/mtRnr1_expression.png",
+        ENSMUSG00000064337 = "results/{tissue}/qc/mtRnr1_expression.png",
         ENSMUSG00000064339 = "results/{tissue}/qc/mtRnr2_expression.png",
         ENSMUSG00000064336 = "results/{tissue}/qc/mtTf_expression.png",
     resources:
@@ -251,9 +253,9 @@ rule plot_qc:
 
 rule plot_genes:
     input:
-        expression_tpm = expand("data/{study}/label_expression.tpm.txt", study=studies),
+        expression_tpm = lambda wildcards: expand("data/{study}/label_expression.tpm.txt", study=studies_by_tissue(wildcards.tissue)),
     params:
-        studies = studies,
+        studies = select_tissue(studies),
         genes_ID = ["ENSMUSG00000055116", "ENSMUSG00000020038", "ENSMUSG00000068742", "ENSMUSG00000020893", "ENSMUSG00000055866", "ENSMUSG00000028957", "ENSMUSG00000020889", "ENSMUSG00000021775", "ENSMUSG00000059824", "ENSMUSG00000029238"],
         genes_symbol = ["Arntl", "Cry1", "Cry2", "Per1", "Per2", "Per3", "Nr1d1", "Nr1d2", "Dbp", "Clock"]
     output:
@@ -284,9 +286,9 @@ rule plot_genes:
 
 rule plot_jtk:
     input:
-        jtk = expand("data/{study}/jtk/JTKresult_expression.tpm.txt", study=studies),
+        jtk = lambda wildcards: expand("data/{study}/jtk/JTKresult_expression.tpm.txt", study=studies_by_tissue(wildcards.tissue)),
     params:
-        studies = studies,
+        studies = select_tissue(studies),
     output:
         breakdowns = "results/{tissue}/jtk/breakdowns.png",
         periods = "results/{tissue}/jtk/periods.png",
@@ -297,8 +299,8 @@ rule plot_jtk:
 
 rule plot_overlapped_genes:
     input:
-        jtk = expand("data/{study}/jtk/JTKresult_expression.tpm.txt", study=studies),
-        tpm = expand("data/{study}/expression.tpm.txt", study=studies),
+        jtk = lambda wildcards: expand("data/{study}/jtk/JTKresult_expression.tpm.txt", study=studies_by_tissue(wildcards.tissue)),
+        tpm = lambda wildcards: expand("data/{study}/expression.tpm.txt", study=studies_by_tissue(wildcards.tissue)),
     params:
         studies = studies,
     output:
@@ -313,9 +315,9 @@ rule plot_overlapped_genes:
 
 rule plot_PCA:
     input:
-        tpm = expand("data/{study}/expression.tpm.txt", study=studies),
+        tpm = lambda wildcards: expand("data/{study}/expression.tpm.txt", study=studies_by_tissue(wildcards.tissue)),
     params:
-        studies = studies,
+        studies = select_tissue(studies),
     resources:
         mem_mb = 6000,
     output:
@@ -327,10 +329,10 @@ rule plot_PCA:
 rule robustness:
     input:
         robustness = "results/{tissue}/robustness_score.txt",
-        tpm = expand("data/{study}/expression.tpm.txt",study=studies),
-        jtk = expand("data/{study}/jtk/JTKresult_expression.tpm.txt", study=studies),
+        tpm = lambda wildcards: expand("data/{study}/expression.tpm.txt", study=studies_by_tissue(wildcards.tissue)),
+        jtk = lambda wildcards: expand("data/{study}/jtk/JTKresult_expression.tpm.txt", study=studies_by_tissue(wildcards.tissue)),
     params:
-        studies = studies,
+        studies = select_tissue(studies),
     output:
         expression_level = "results/{tissue}/robustness/expression_level_robust.png",
         amplitude = "results/{tissue}/robustness/amplitude_robust.png",
@@ -341,10 +343,10 @@ rule robustness:
 
 rule all_samples:
     input:
-        tpm = expand("data/{study}/expression.tpm.txt",study=studies),
-        num_reads = expand("data/{study}/expression.num_reads.txt",study=studies),
+        tpm = lambda wildcards: expand("data/{study}/expression.tpm.txt", study=studies_by_tissue(wildcards.tissue)),
+        num_reads = lambda wildcards: expand("data/{study}/expression.num_reads.txt", study=studies_by_tissue(wildcards.tissue)),
     params:
-        studies = studies,
+        studies = select_tissue(studies),
     output:
         tpm = "results/{tissue}/tpm_all_samples.txt",
         num_reads = "results/{tissue}/num_reads_all_samples.txt",
@@ -353,7 +355,7 @@ rule all_samples:
         all_tpm = pandas.DataFrame()
         all_num_reads = pandas.DataFrame()
         all_samples = []
-        for study, tpmfile in zip(studies, input.tpm):
+        for study, tpmfile in zip(params.studies, input.tpm):
             if study == "Weger18":
                 continue
             tpm = pandas.read_csv(tpmfile, sep="\t", index_col="Name")
@@ -369,7 +371,7 @@ rule all_samples:
         all_samples_df = pandas.DataFrame(all_samples_concat)
         all_samples_df.to_csv(output[2], sep="\t")
 
-        for study, numreadsfile in zip(studies, input.num_reads):
+        for study, numreadsfile in zip(params.studies, input.num_reads):
             if study == "Weger18":
                 continue
             num_reads = pandas.read_csv(numreadsfile, sep="\t", index_col="Name")
@@ -379,9 +381,9 @@ rule all_samples:
 
 rule scatter_grid:
     input:
-        jtk = expand("data/{study}/jtk/JTKresult_expression.tpm.txt", study=studies),
+        jtk = lambda wildcards: expand("data/{study}/jtk/JTKresult_expression.tpm.txt", study=studies_by_tissue(wildcards.tissue)),
     params:
-        studies = studies,
+        studies = select_tissue(studies),
     output:
         amplitude = "results/{tissue}/amplitude_scatter_grid.png",
         period = "results/{tissue}/period_scatter_grid.png",

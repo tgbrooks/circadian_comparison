@@ -360,10 +360,40 @@ targets = {
         "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns]['zeitgeber'])),
         "tissue": "Liver",
     },
+
+    "Yeung17": {
+        "GSE": "GSE100457",
+        "GSE_postfix": "-GPL17021",
+        "sample_selector": lambda x: x.genotype == "WT" and "RNASeq" in x.title,
+        "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns]['time'])),
+        "tissue": "Kidney",
+    },
+
+    "Zhang14_RNAseq_Kidney_M": {
+        "GSE": "GSE54651",
+        "sample_selector": lambda x: x.tissue == "kidney",
+        "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns].title)),
+        "tissue": "Kidney",
+    },
+
+    "Castelo-Szekely17": {
+        "GSE": "GSE81283",
+        "sample_selector": lambda x: "total RNA" in x.title,
+        "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns].title)),
+        "tissue": "Kidney",
+    },
 }
 
 # List of studies to perform
-studies = ["Lahens15", "Weger18_Liver_M", "Weger18_Liver_F", "Zhang14_RNAseq_Liver_M", "Pan19", "Morton20_Liver", "Atger15_AdLib", "Atger15_NightFeed", "Manella21_Liver", "Weger18", "Yang16A_M", "Yang16B_M", "Yang16B_F", "Guan20_Liver", "Koronowski19_F", "Xin21_Liver_NightFeed", "Yang20", "Kinouchi18_Liver", "Weger20_Bmal1WT", "Weger20_HlfDbpTefWT", "Weger20_CryWT", "Mermet18", "Benegiamo18", "Cajan16", "Chaix19_AdLib_HFD", "Chaix19_NightFeed_HFD", "Chen19", "Du14", "Fader19", "Gaucher19_Chronic_Cntrl", "Greenwell19_AdLib", "Greenwell19_NightFeed", "Hidalgo19", "Hirako18", "Janich15", "Levine20", "Li19_Young", "Li19_Old", "Menet12", "Quagliarini19_NormalDiet", "Quagliarini19_HFD", "Quagliarini19_NormalDiet_WTvsKO", "Quagliarini19_HFD_WTvsKO", "Stubblefield18", "Wu19", ]
+studies = ["Lahens15", "Weger18_Liver_M", "Weger18_Liver_F", "Zhang14_RNAseq_Liver_M", "Pan19", "Morton20_Liver", "Atger15_AdLib", "Atger15_NightFeed", "Manella21_Liver", "Yang16A_M", "Yang16B_M", "Yang16B_F", "Guan20_Liver", "Koronowski19_F", "Xin21_Liver_NightFeed", "Yang20", "Kinouchi18_Liver", "Weger20_Bmal1WT", "Weger20_HlfDbpTefWT", "Weger20_CryWT", "Mermet18", "Benegiamo18", "Cajan16", "Chaix19_AdLib_HFD", "Chaix19_NightFeed_HFD", "Chen19", "Du14", "Fader19", "Gaucher19_Chronic_Cntrl", "Greenwell19_AdLib", "Greenwell19_NightFeed", "Hidalgo19", "Hirako18", "Levine20", "Li19_Young", "Li19_Old", "Menet12", "Quagliarini19_NormalDiet", "Quagliarini19_HFD", "Quagliarini19_NormalDiet_WTvsKO", "Quagliarini19_HFD_WTvsKO", "Stubblefield18", "Wu19", "Yeung17", "Zhang14_RNAseq_Kidney_M", "Castelo-Szekely17", ]
 
 # List of all tissues being run
 tissues = list(set(targets[study]['tissue'] for study in studies))
+
+def studies_by_tissue(tissue):
+    return [study for study in studies if targets[study]['tissue'] == tissue]
+
+def select_tissue(studies):
+    def f(wildcards, output):
+        return [study for study in studies if targets[study]['tissue'] == wildcards.tissue]
+    return f
