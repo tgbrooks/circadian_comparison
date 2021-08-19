@@ -6,6 +6,9 @@ def manella21_time(times):
     return [int(re.search("(\d+)[AB]", time).groups()[0]) for time in times]
 def only_number(times):
     return [int(re.search("(\d+)", time).groups()[0]) for time in times]
+def hirako18_time(times):
+    # Times are in clock time with ZT0 = 7:00am, so 0 Hour (midnight) is at ZT17
+    return [int(re.search("(\d+)", time).groups()[0])+17 for time in times]
 
 def sample_timepoints(study):
     sample_data = pandas.read_csv(f"data/{study}/sample_data.txt", sep="\t", index_col="geo_accession")
@@ -280,7 +283,7 @@ targets = {
     "Hirako18": {
         "GSE": "GSE109908",
         "sample_selector": lambda x: x.agent == "Control",
-        "time": lambda sample_data, expression_table: only_number(list(sample_data.loc[expression_table.columns]['time point'])),
+        "time": lambda sample_data, expression_table: hirako18_time(list(sample_data.loc[expression_table.columns]['time point'])),
         "tissue": "Liver",
     },
 
