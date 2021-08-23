@@ -43,10 +43,10 @@ phases = {strictness:{} for strictness in Q_CUTOFFS.keys()}
 amplitudes = {strictness:{} for strictness in Q_CUTOFFS.keys()}
 for study, jtkfile in zip(studies, snakemake.input.jtk):
     jtk = pandas.read_csv(jtkfile, sep="\t", index_col=0)
-    breakdowns[study] = num_below(jtk['BH.Q'], breakpoints)
+    breakdowns[study] = num_below(jtk['qvalue'], breakpoints)
 
     for strictness, cutoff in Q_CUTOFFS.items():
-        significant = jtk[jtk['BH.Q'] < cutoff]
+        significant = jtk[jtk['qvalue'] < cutoff]
         periods[strictness][study] = significant['PER']
         phases[strictness][study] = significant['LAG']
         amplitudes[strictness][study] = significant['AMP']

@@ -22,6 +22,32 @@ summary['median_t'] =  (curves.abs()/curves_pstd).median(axis=1)
 # Select genes to use
 use = (summary.re_logAmp_sd < 2.5) & (summary.index.map(num_zeros) < 200) & (summary.funcDf < 10) & (summary.median_t > 2)
 
+## Plot the gene fits for core clock genes
+def alogit(x):
+    return numpy.exp(x) / (numpy.exp(x) + 1)
+genes = ['ENSMUSG00000055116']
+names = ['Arntl']
+re_by_studygene = re.reset_index().set_index(['gene', 'study'])
+studies = re.study.unique()
+for gene, name in zip(genes, names):
+    fig, ax = pylab.subplots(figsize=(6,3))
+
+    u = curves.loc[gene].index
+    value = curves.loc[gene] + summary.loc[gene].fit_mesor
+
+    # Plot each fit curve for each study
+    for study in studies:
+        logAmp, phi, mesor = re_by_genestudy.loc[(gene, study)]
+        study_u = u + (alogit(phi) - 0.5)
+        study_values = numpy.exp(logAmp)*value + mesor
+        fig.plot((study_u%1)*24, study_values, color='gray')
+
+    # Plot the overall fit
+    fig.plot(u*24, value, color='k')
+
+    fig.title(f"{gene} | {name}")
+    fig.savefig(snakemake.output.gene_plot_dir+f"/{gene}.png")
+
 
 # Align the curves by their peak time
 # So all peaks will occur at time u=0.5 (out of the range [0,1])
@@ -112,3 +138,4 @@ fig.savefig(snakemake.output.tsne, dpi=300)
 #for idx, (gene, curve) in enumerate(curves_normalized.sample(500).iterrows()):
 #    ax.plot( curve.index, idx + curve.values, c='k', linewidth=0.5)
 #fig.savefig("results/Liver/spline_fit/curves.png", dpi=300)
+

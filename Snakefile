@@ -7,6 +7,8 @@ from  scripts.process_series_matrix import process_series_matrix
 from studies import targets, studies, sample_timepoints, tissues, select_tissue, studies_by_tissue
 
 SPLINE_FIT_N_BATCHES = 100
+# Require at least this number of mean reads per gene to include in q-value computations
+MEAN_READCOUNT_THRESHOLD = 2
 
 wildcard_constraints:
     sample = "GSM(\d+)",
@@ -16,7 +18,7 @@ rule all:
         # All study-level files:
         expand("data/{study}/sample_data.txt", study=targets.keys()),
         expand("data/{study}/label_expression.tpm.txt", study=studies),
-        expand("data/{study}/jtk/JTKresult_expression.tpm.txt", study=studies),
+        expand("data/{study}/jtk.results.txt", study=studies),
         # All tissue-level files:
         expand("results/{tissue}/{file}",
             tissue = tissues,
@@ -29,11 +31,11 @@ rule all:
                 "robustness/expression_level_robust.png",
                 "tpm_all_samples.txt",
                 "amplitude_scatter_grid.png",
-                #"spline_fit/summary.txt",
             ]
         ),
-        "results/Liver/spline_fit/summary.txt",
-        "results/Liver/spline_fit/tsne.png",
+        # NOTE: big computation, ~500 hours of CPU time
+        #"results/Liver/spline_fit/summary.txt",
+        #"results/Liver/spline_fit/tsne.png",
 
 rule get_series_matrix:
     output:
@@ -219,6 +221,7 @@ rule label_data:
 rule run_JTK:
     input:
         "data/{study}/expression.tpm.txt",
+        "data/{study}/expression.num_reads.txt",
         "data/{study}/sample_data.txt"
     output:
         "data/{study}/jtk/JTKresult_expression.tpm.txt"
@@ -227,6 +230,26 @@ rule run_JTK:
         out_dir = "data/{study}/jtk/"
     script:
         "scripts/run_jtk.R"
+
+rule process_JTK:
+    input:
+        "data/{study}/jtk/JTKresult_expression.tpm.txt",
+        "data/{study}/expression.num_reads.txt",
+    output:
+        "data/{study}/jtk.results.txt",
+    run:
+        # This generates a JTK output with q-values computed after removing
+        # low-expressed genes.
+        jtk = pandas.read_csv(input[0], sep="\t", index_col=0)
+        num_reads = pandas.read_csv(input[0], sep="\t", index_col=0).loc[jtk.index]
+        selected = num_reads.mean(axis=1) >= MEAN_READCOUNT_THRESHOLD
+        ps = jtk.loc[selected, 'ADJ.P']
+        import statsmodels.api as sm
+        _, qs, _, _ = sm.stats.multipletests(ps, method="fdr_bh")
+        jtk['dropped'] = ~selected# Mark any genes as 'dropped' if they did not pass the cutoff
+        jtk['qvalue'] = 1 # Dropped genes get q=1
+        jtk.loc[selected, 'qvalue'] = qs
+        jtk.to_csv(output[0], sep="\t")
 
 rule plot_qc:
     input:
@@ -288,7 +311,7 @@ rule plot_genes:
 
 rule plot_jtk:
     input:
-        jtk = lambda wildcards: expand("data/{study}/jtk/JTKresult_expression.tpm.txt", study=studies_by_tissue(wildcards.tissue)),
+        jtk = lambda wildcards: expand("data/{study}/jtk.results.txt", study=studies_by_tissue(wildcards.tissue)),
     params:
         studies = select_tissue(studies),
     output:
@@ -301,7 +324,7 @@ rule plot_jtk:
 
 rule plot_overlapped_genes:
     input:
-        jtk = lambda wildcards: expand("data/{study}/jtk/JTKresult_expression.tpm.txt", study=studies_by_tissue(wildcards.tissue)),
+        jtk = lambda wildcards: expand("data/{study}/jtk.results.txt", study=studies_by_tissue(wildcards.tissue)),
         tpm = lambda wildcards: expand("data/{study}/expression.tpm.txt", study=studies_by_tissue(wildcards.tissue)),
     params:
         studies = select_tissue(studies),
@@ -386,7 +409,7 @@ rule all_samples:
 
 rule scatter_grid:
     input:
-        jtk = lambda wildcards: expand("data/{study}/jtk/JTKresult_expression.tpm.txt", study=studies_by_tissue(wildcards.tissue)),
+        jtk = lambda wildcards: expand("data/{study}/jtk.results.txt", study=studies_by_tissue(wildcards.tissue)),
     params:
         studies = select_tissue(studies),
     output:
@@ -446,6 +469,7 @@ rule plot_spline_fits:
         summary = "results/{tissue}/spline_fit/summary.txt",
         curves_fit = "results/{tissue}/spline_fit/curves_fit.txt",
         curves_pstd = "results/{tissue}/spline_fit/curves_pstd.txt",
+        gene_plot_dir = directory("results/{tissue}/spline_fit/gene_plots/"),
     output:
         pca = "results/{tissue}/spline_fit/pca.png",
         tsne = "results/{tissue}/spline_fit/tsne.png",
