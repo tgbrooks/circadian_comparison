@@ -351,6 +351,8 @@ rule plot_PCA:
         all_samples_study_svg = "results/{tissue}/PCA/all_samples_study.svg",
         all_samples_time = "results/{tissue}/PCA/all_samples_time.png",
         all_samples_time_svg = "results/{tissue}/PCA/all_samples_time.svg",
+        all_samples_study_classification = "results/{tissue}/PCA/all_samples_study_classification.png",
+        all_samples_study_classification_svg = "results/{tissue}/PCA/all_samples_study_classification.svg",
     script:
         "scripts/plot_PCA.py"
 
