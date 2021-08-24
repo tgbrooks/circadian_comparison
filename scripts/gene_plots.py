@@ -1,12 +1,15 @@
 import json
+import re
 import pathlib
+
 import pandas
 import numpy
 import matplotlib
 matplotlib.use("Agg")
 import pylab
+
 from studies import targets, sample_timepoints
-import re
+from styles import color_by_study, shape_by_study, linestyle_by_study
 
 studies = snakemake.params.studies
 N_studies = len(studies)
@@ -26,13 +29,6 @@ for study in studies:
 
 max_time = max(t for times in times_data.values() for t in times)
 
-# Determine styles for each study
-cmap = pylab.get_cmap("tab20")
-marker = ["o", "+", "s", "v", "x"]
-linestyles = ["-", "--", "-.", ".."]
-color = {study: cmap(i%20) for i, study in enumerate(studies)}
-shape = {study: marker[i//20] for i, study in enumerate(studies)}
-linestyle = {study: linestyles[i//20] for i, study in enumerate(studies)}
 
 # Plot genes two different ways:
 # - By collapsing periods onto each other by mod 24
@@ -51,13 +47,13 @@ for name, gene in zip(genes_symbol, genes_ID):
         tpm = tpm_data[study]
         for col in tpm.columns:
             expression_data.append(tpm.loc[gene][col])
-        ax.scatter(time_data,expression_data, label=study, s=17, marker=shape[study], color=color[study])
-        ax1.scatter(time_mod24_data,expression_data, label=study, s=17, marker=shape[study], color=color[study])
+        ax.scatter(time_data,expression_data, label=study, s=17, marker=shape_by_study[study], color=color_by_study[study])
+        ax1.scatter(time_mod24_data,expression_data, label=study, s=17, marker=shape_by_study[study], color=color_by_study[study])
         expression_data_series=pandas.Series(expression_data)
         mean_by_time = expression_data_series.groupby(time_data).mean()
-        ax.plot(mean_by_time.index,mean_by_time, color=color[study], linestyle=linestyle[study])
+        ax.plot(mean_by_time.index,mean_by_time, color=color_by_study[study], linestyle=linestyle_by_study[study])
         mean_by_modtime = expression_data_series.groupby(time_mod24_data).mean()
-        ax1.plot(mean_by_modtime.index,mean_by_modtime, marker=shape[study], color=color[study])
+        ax1.plot(mean_by_modtime.index,mean_by_modtime, marker=shape_by_study[study], color=color_by_study[study])
 
     ax.set_xticks(numpy.arange(0, 72, step=3))
     ax.set_xlabel("Time")
