@@ -218,6 +218,14 @@ rule label_data:
         num_reads.insert(1, 'GeneSymbol', num_reads['ID'].map(gene_name_from_id))
         num_reads.to_csv(output[1], sep ="\t", index=False)
 
+rule classify_studies:
+    input:
+        meta_info = expand("data/{study}/salmon.meta_info.json", study=studies)
+    output:
+        "data/study_classification.json"
+    script:
+        "scripts/classify_studies.py"
+
 rule run_JTK:
     input:
         "data/{study}/expression.tpm.txt",
