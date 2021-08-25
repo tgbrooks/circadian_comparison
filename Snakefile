@@ -6,7 +6,7 @@ from  scripts.process_series_matrix import process_series_matrix
 
 from studies import targets, studies, sample_timepoints, tissues, select_tissue, studies_by_tissue
 
-SPLINE_FIT_N_BATCHES = 100
+SPLINE_FIT_N_BATCHES = 400
 # Require at least this number of mean reads per gene to include in q-value computations
 MEAN_READCOUNT_THRESHOLD = 2
 
@@ -34,8 +34,8 @@ rule all:
             ]
         ),
         # NOTE: big computation, ~500 hours of CPU time
-        #"results/Liver/spline_fit/summary.txt",
-        #"results/Liver/spline_fit/tsne.png",
+        "results/Liver/spline_fit/summary.txt",
+        "results/Liver/spline_fit/tsne.png",
 
 rule get_series_matrix:
     output:
@@ -479,9 +479,9 @@ rule plot_spline_fits:
         summary = "results/{tissue}/spline_fit/summary.txt",
         curves_fit = "results/{tissue}/spline_fit/curves_fit.txt",
         curves_pstd = "results/{tissue}/spline_fit/curves_pstd.txt",
-        gene_plot_dir = directory("results/{tissue}/spline_fit/gene_plots/"),
     output:
         pca = "results/{tissue}/spline_fit/pca.png",
         tsne = "results/{tissue}/spline_fit/tsne.png",
+        gene_plot_dir = directory("results/{tissue}/spline_fit/gene_plots/"),
     script:
         "scripts/plot_spline_fits.py"

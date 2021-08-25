@@ -5,10 +5,14 @@ library(tidyr)
 
 source("scripts/spline_fit.R")
 
+# Small value to add to gene before log transform
+PSEUDOCOUNT <- 0.01
+
 input <- snakemake@input
 output <- snakemake@output
 num_batches <- snakemake@params[['num_batches']]
 batch <- as.integer(snakemake@wildcards[['batch']])
+
 #input <- list(
 #    tpm = "results/Liver/tpm_all_samples.txt",
 #    sample_info = "results/Liver/all_samples_info.txt"
@@ -20,14 +24,14 @@ batch <- as.integer(snakemake@wildcards[['batch']])
 #    re = "temp.re.txt",
 #    re_structure = "temp.re_structure.txt"
 #)
-#num_batchs <- 25
+#num_batches <- 3000
 #batch <- 1
 
 ## Load the raw data
 # Load with read.table not read_tsv: for some reason read_tsv inserts a extra, unwanted column
 data_table <- as_tibble(read.table(input[['tpm']], sep="\t", header=TRUE))
 
-sample_table <- read_tsv(input[['sample_info']]) %>% 
+sample_table <- read_tsv(input[['sample_info']], show_col_types=FALSE) %>% 
     rename_with(function(x) { "sample" }, 1)
 
 # We don't use all studies
@@ -36,9 +40,9 @@ drop_studies <- c("Greenwell19_AdLib", "Greenwell19_NightFeed", "Janich15", "Man
 selected_samples <- (sample_table %>% filter(!(study %in% drop_studies)))
 
 # Find genes passing an expression cutoff
-# require at least 50% of samples to have non-zero measurements
+# require at least 33% of samples to have non-zero measurements
 data_table$non_zero <- rowSums(data_table %>% select(selected_samples$sample) != 0)
-data_table$passing_gene <- data_table$non_zero > (length(selected_samples)%/%2)
+data_table$passing_gene <- data_table$non_zero > (nrow(selected_samples)%/%3)
 selected_data_table <- data_table %>% filter(passing_gene)
 
 
@@ -48,6 +52,7 @@ batch_size <- (num_genes_total %/% num_batches) + 1
 fst <- 1 + batch_size * batch
 lst <- batch_size * (batch+1)
 selected_genes <-  (selected_data_table %>% slice(fst:lst))$Name
+#selected_genes <- c("ENSMUSG00000055866")# XXX TODO USE BATCHES
 
 
 times <- selected_samples$time
@@ -64,7 +69,7 @@ for(gene in selected_genes) {
 
     # Fit the spline to that gene
     tryCatch({
-        res <- fit_splines(t(gene_values), study, times)
+        res <- fit_splines(log(t(gene_values)+PSEUDOCOUNT), study, times)
 
         if (is.null(summary)) {
             # If first iteration, must generate the tables we store these in
@@ -104,6 +109,8 @@ for(gene in selected_genes) {
         print("Failed on gene:")
         print(gene)
     })
+    print("Done with gene:")
+    print(gene)
 }
 
 write_tsv(summary %>% relocate(gene), output[['summary']])

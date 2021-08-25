@@ -33,7 +33,14 @@ fit_splines <- function(values, groups, times) {
                group=~group,
                start=c(mesor_guess),
                spar="m",
-               control=list(converg="PRSS"),
+               control=list(
+                    converg="PRSS",
+                    rkpk.control=list(
+                        limnla=c(-5,3) #Min and max values for lambda
+                                       # In my experience, too low values are no good
+                                       # (i.e. overfits). Default is c(-10,3)
+                    )
+                ),
                data=df)
 
     # Extract the shape of the overall fitted curve

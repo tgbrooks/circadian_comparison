@@ -1,3 +1,4 @@
+import pathlib
 import pandas
 import numpy
 import scipy.interpolate
@@ -5,48 +6,56 @@ import statsmodels.multivariate.pca
 import sklearn.manifold
 import pylab
 
+DPI = 300
 
 # Load information
-tpm = pandas.read_csv(snakemake.input.tpm, sep="\t", index_col=0).drop(columns=["Symbol"])
+#tpm = pandas.read_csv(snakemake.input.tpm, sep="\t", index_col=0).drop(columns=["Symbol"])
 
 # Load spline fits
 summary = pandas.read_csv(snakemake.input.summary, sep="\t", index_col=0)
 curves = pandas.read_csv(snakemake.input.curves_fit, sep="\t", index_col=0)
 curves_pstd = pandas.read_csv(snakemake.input.curves_pstd, sep="\t", index_col=0)
-#re = pandas.read_csv("results/Liver/spline_fit/re.txt", sep="\t", index_col=0)
-#re_structure = pandas.read_csv("results/Liver/spline_fit/re_structure.txt", sep="\t", index_col=0)
+re = pandas.read_csv("results/Liver/spline_fit/re.txt", sep="\t", index_col=0) # random effects
+re_structure = pandas.read_csv("results/Liver/spline_fit/re_structure.txt", sep="\t", index_col=0)
 
-num_zeros = (tpm == 0).sum(axis=1)
+#num_zeros = (tpm == 0).sum(axis=1)
 summary['median_t'] =  (curves.abs()/curves_pstd).median(axis=1)
+summary['rel_amp'] = summary['fit_amplitude'] / summary['sigma']
 
 # Select genes to use
-use = (summary.re_logAmp_sd < 2.5) & (summary.index.map(num_zeros) < 200) & (summary.funcDf < 10) & (summary.median_t > 2)
+use = (summary.re_logAmp_sd < 3) & (summary.funcDf < 15) & (summary.median_t > 2) & (summary.iteration_times < 31)
+print(f"Using {use.sum()} out of {len(use)} genes.")
 
 ## Plot the gene fits for core clock genes
 def alogit(x):
     return numpy.exp(x) / (numpy.exp(x) + 1)
-genes = ['ENSMUSG00000055116']
-names = ['Arntl']
+genes = ["ENSMUSG00000055116", "ENSMUSG00000020038", "ENSMUSG00000068742", "ENSMUSG00000020893", "ENSMUSG00000055866", "ENSMUSG00000028957", "ENSMUSG00000020889", "ENSMUSG00000021775", "ENSMUSG00000059824", "ENSMUSG00000029238"]
+names= ["Arntl", "Cry1", "Cry2", "Per1", "Per2", "Per3", "Nr1d1", "Nr1d2", "Dbp", "Clock"]
 re_by_studygene = re.reset_index().set_index(['gene', 'study'])
 studies = re.study.unique()
+pathlib.Path(snakemake.output.gene_plot_dir).mkdir(exist_ok=True)
 for gene, name in zip(genes, names):
+    if gene not in summary.index:
+        print(f"Gene {gene} | {name} has no spline fit.")
+        continue
     fig, ax = pylab.subplots(figsize=(6,3))
 
-    u = curves.loc[gene].index
+    u = curves.loc[gene].index.astype(float)
     value = curves.loc[gene] + summary.loc[gene].fit_mesor
 
     # Plot each fit curve for each study
     for study in studies:
-        logAmp, phi, mesor = re_by_genestudy.loc[(gene, study)]
-        study_u = u + (alogit(phi) - 0.5)
+        logAmp, phi, mesor = re_by_studygene.loc[(gene, study)]
+        study_u = ((u + (alogit(phi) - 0.5)) % 1)
         study_values = numpy.exp(logAmp)*value + mesor
-        fig.plot((study_u%1)*24, study_values, color='gray')
+        order = numpy.argsort(study_u)
+        ax.plot( (study_u*24)[order], numpy.exp(study_values[order]), color='gray', linewidth=0.5)
 
     # Plot the overall fit
-    fig.plot(u*24, value, color='k')
+    ax.plot(u*24, numpy.exp(value), color='k')
 
-    fig.title(f"{gene} | {name}")
-    fig.savefig(snakemake.output.gene_plot_dir+f"/{gene}.png")
+    ax.set_title(f"{gene} | {name}")
+    fig.savefig(snakemake.output.gene_plot_dir+f"/{gene}.png", dpi=DPI)
 
 
 # Align the curves by their peak time
@@ -90,15 +99,15 @@ pca = statsmodels.multivariate.pca.PCA(curves_normalized, ncomp=2)
 fig, ax = pylab.subplots(figsize=(8,8))
 #ax.scatter(pca.scores['comp_0'], pca.scores['comp_1'])
 xscale = (numpy.max(pca.scores['comp_0']) - numpy.min(pca.scores['comp_0'])) * 0.08
-yscale = (numpy.max(pca.scores['comp_1']) - numpy.min(pca.scores['comp_1'])) * 0.03
+yscale = (numpy.max(pca.scores['comp_1']) - numpy.min(pca.scores['comp_1'])) * 0.015
 colormap = pylab.get_cmap('viridis')
-colorby = 'median_t'
+colorby = 'rel_amp'
 scale = numpy.log10
 cmin, cmax = scale(summary.loc[use, colorby].min()), scale(summary.loc[use, colorby].max())
 for gene, curve in curves_normalized.sample(300).iterrows():
     h = ax.plot(
              xscale * (curve.index - 0.5) + pca.scores.loc[gene, 'comp_0'],
-             yscale * curve.values + pca.scores.loc[gene, 'comp_1'],
+             yscale * numpy.exp(curve.values) + pca.scores.loc[gene, 'comp_1'],
              c=colormap((scale(summary.loc[gene, colorby]) - cmin) / (cmax - cmin)),
              linewidth=0.5)
 ax.set_axis_off()
@@ -114,15 +123,15 @@ fig, ax = pylab.subplots(figsize=(8,8))
 #ax.scatter(tsne['comp_0'], tsne['comp_1'])
 # Downsample the genes and plot their curves
 xscale = (numpy.max(tsne['comp_0']) - numpy.min(tsne['comp_0'])) * 0.05
-yscale = (numpy.max(tsne['comp_1']) - numpy.min(tsne['comp_1'])) * 0.05
+yscale = (numpy.max(tsne['comp_1']) - numpy.min(tsne['comp_1'])) * 0.025
 colormap = pylab.get_cmap('viridis')
-colorby = 'median_t'
+colorby = 'rel_amp'
 scale = numpy.log10
 cmin, cmax = scale(summary.loc[use, colorby].min()), scale(summary.loc[use, colorby].max())
 for gene, curve in curves_normalized.sample(300).iterrows():
     h = ax.plot(
              xscale * (curve.index - 0.5) + tsne.loc[gene, 'comp_0'],
-             yscale * curve.values + tsne.loc[gene, 'comp_1'],
+             yscale * numpy.exp(curve.values) + tsne.loc[gene, 'comp_1'],
              c=colormap((scale(summary.loc[gene, colorby]) - cmin) / (cmax - cmin)),
              linewidth=0.5)
 ax.set_axis_off()
