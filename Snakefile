@@ -482,6 +482,8 @@ rule plot_spline_fits:
     output:
         pca = "results/{tissue}/spline_fit/pca.png",
         tsne = "results/{tissue}/spline_fit/tsne.png",
+        phase_distribution = "results/{tissue}/spline_fit/phase_distribution.png",
+        phase_correlation = "results/{tissue}/spline_fit/phase_correlation.png",
         gene_plot_dir = directory("results/{tissue}/spline_fit/gene_plots/"),
     script:
         "scripts/plot_spline_fits.py"

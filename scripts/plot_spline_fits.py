@@ -57,6 +57,33 @@ for gene, name in zip(genes, names):
     ax.set_title(f"{gene} | {name}")
     fig.savefig(snakemake.output.gene_plot_dir+f"/{gene}.png", dpi=DPI)
 
+# Plot the phase distributions
+fig, axes = pylab.subplots(figsize=(5,5,), nrows=2, sharex=True, sharey=True)
+bins = numpy.linspace(0,24,25) # hourly bins
+axes[0].hist(summary[use].fit_peak_time)
+axes[0].set_ylabel("Peak Time")
+axes[1].hist(summary[use].fit_trough_time)
+axes[1].set_ylabel("Trough Time")
+axes[1].set_xlabel("Time (hours)")
+axes[1].set_xticks(numpy.linspace(0,24,5))
+fig.tight_layout()
+fig.savefig(snakemake.output.phase_distribution, dpi=DPI)
+
+# Plot correlation of trough and peak time
+fig, ax = pylab.subplots()
+ax.scatter(
+        summary[use].fit_peak_time + 0.1*numpy.random.normal(size=len(summary[use])),
+        summary[use].fit_trough_time + 0.1*numpy.random.normal(size=len(summary[use])),
+        s=1)
+ax.plot([0,12],[12,24], c='k', linewidth=1, zorder=-1)
+ax.plot([12,24],[0,12], c='k', linewidth=1, zorder=-1)
+ax.set_xlim(0,24)
+ax.set_ylim(0,24)
+ax.set_xlabel("Peak Time (hrs)")
+ax.set_ylabel("Trough Time (hrs)")
+ax.set_xticks(numpy.linspace(0,24,5))
+ax.set_yticks(numpy.linspace(0,24,5))
+fig.savefig(snakemake.output.phase_correlation, dpi=DPI)
 
 # Align the curves by their peak time
 # So all peaks will occur at time u=0.5 (out of the range [0,1])
