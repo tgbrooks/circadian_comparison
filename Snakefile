@@ -27,7 +27,7 @@ rule all:
                 "clock_genes/plot_Arntl.png",
                 "jtk/breakdowns.png",
                 "num_common_genes.txt",
-                "PCA/all_samples_study.png",
+                "PCA",
                 "robustness/expression_level_robust.png",
                 "tpm_all_samples.txt",
                 "amplitude_scatter_grid.png",
@@ -66,7 +66,7 @@ checkpoint split_samples:
     input:
         "data/{study}/sample_data.txt"
     output:
-        directory("data/{study}/samples")
+        directory("data/{study}/samples/")
     run:
         outdir = pathlib.Path(output[0])
         outdir.mkdir(exist_ok=True)
@@ -350,17 +350,14 @@ rule plot_overlapped_genes:
 rule plot_PCA:
     input:
         tpm = lambda wildcards: expand("data/{study}/expression.tpm.txt", study=studies_by_tissue(wildcards.tissue)),
+        jtk = lambda wildcards: expand("data/{study}/jtk.results.txt", study=studies_by_tissue(wildcards.tissue)),
+        robustness = "results/{tissue}/robustness_score.txt",
     params:
         studies = select_tissue(studies),
     resources:
         mem_mb = 6000,
     output:
-        all_samples_study = "results/{tissue}/PCA/all_samples_study.png",
-        all_samples_study_svg = "results/{tissue}/PCA/all_samples_study.svg",
-        all_samples_time = "results/{tissue}/PCA/all_samples_time.png",
-        all_samples_time_svg = "results/{tissue}/PCA/all_samples_time.svg",
-        all_samples_study_classification = "results/{tissue}/PCA/all_samples_study_classification.png",
-        all_samples_study_classification_svg = "results/{tissue}/PCA/all_samples_study_classification.svg",
+        dir = directory("results/{tissue}/PCA"),
     script:
         "scripts/plot_PCA.py"
 
