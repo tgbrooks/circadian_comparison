@@ -67,7 +67,7 @@ fig.savefig(snakemake.output.breakdowns, dpi=DPI)
 include_studies = [study for study in studies if len(phases['loose'][study]) > 10]
 N_studies = len(include_studies)
 N_ROWS = math.ceil(N_studies / N_COLUMNS)
-remove_unplotted = slice(0,0) if N_studies == N_ROWS * N_COLUMNS else slice(-(N_ROWS * N_COLUMNS) - N_studies, None)
+remove_unplotted = slice(0,0) if N_studies == N_ROWS * N_COLUMNS else slice(-(N_ROWS * N_COLUMNS) + N_studies, None)
 
 # Histogram of periods
 fig, axes = pylab.subplots(figsize=(1+5*N_COLUMNS,0.7+0.7*N_ROWS), nrows=N_ROWS, ncols=N_COLUMNS, sharex=True, squeeze=False)
