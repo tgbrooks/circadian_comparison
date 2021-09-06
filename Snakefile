@@ -31,6 +31,8 @@ rule all:
                 "robustness/expression_level_robust.png",
                 "tpm_all_samples.txt",
                 "amplitude_scatter_grid.png",
+                "consensus_pca/",
+                "outlier_samples.txt",
             ]
         ),
         # NOTE: big computation, ~500 hours of CPU time
@@ -414,6 +416,15 @@ rule all_samples:
         all_num_reads.insert(0, 'Symbol', pandas.read_csv("gene_name.txt", sep="\t", index_col="ID")['GeneSymbol'])
         all_num_reads.to_csv(output[1], sep ="\t", index="Name")
 
+rule outlier_detection:
+    input:
+        tpm = "results/{tissue}/tpm_all_samples.txt",
+        sample_info = "results/{tissue}/all_samples_info.txt",
+    output:
+        outliers = "results/{tissue}/outlier_samples.txt",
+    script:
+        "scripts/outlier_detection.py"
+
 rule scatter_grid:
     input:
         jtk = lambda wildcards: expand("data/{study}/jtk.results.txt", study=studies_by_tissue(wildcards.tissue)),
@@ -427,6 +438,16 @@ rule scatter_grid:
         mem_mb = 12000
     script:
         "scripts/plot_scatter_grid.py"
+
+rule plot_consensus_pca:
+    input:
+        tpm = "results/{tissue}/tpm_all_samples.txt",
+        sample_info = "results/{tissue}/all_samples_info.txt",
+        outliers = "results/{tissue}/outlier_samples.txt",
+    output:
+        outdir = directory("results/{tissue}/consensus_pca/")
+    script:
+        "scripts/consensus_pca.py"
 
 rule run_spline_fit:
     input:
