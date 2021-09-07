@@ -351,8 +351,10 @@ rule plot_overlapped_genes:
 
 rule plot_PCA:
     input:
-        tpm = lambda wildcards: expand("data/{study}/expression.tpm.txt", study=studies_by_tissue(wildcards.tissue)),
+        tpm = "results/{tissue}/tpm_all_samples.txt",
+        sample_info = "results/{tissue}/all_samples_info.txt",
         jtk = lambda wildcards: expand("data/{study}/jtk.results.txt", study=studies_by_tissue(wildcards.tissue)),
+        outlier_samples = "results/{tissue}/outlier_samples.txt",
         robustness = "results/{tissue}/robustness_score.txt",
     params:
         studies = select_tissue(studies),

@@ -18,19 +18,13 @@ PSEUDOCOUNT = 0.01
 OUT_DIR = pathlib.Path(snakemake.output.dir)
 OUT_DIR.mkdir(exist_ok=True)
 
-data = {}
+data = pandas.read_csv(snakemake.input.tpm, sep="\t", index_col=[0,1])
+sample_info = pandas.read_csv(snakemake.input.sample_info, sep="\t", index_col=[0])
+outlier_samples = [x.strip() for x in open(snakemake.input.outlier_samples).readlines()]
+
 jtk_amp = {}
 jtk_p = {}
-metadata = []
-for study, tpmfile, jtk_file in zip(studies, snakemake.input.tpm, snakemake.input.jtk):
-    if study == "Weger18": 
-        continue
-    tpm = pandas.read_csv(tpmfile, sep="\t", index_col=0)
-    data[study] = tpm
-    metadata.append(pandas.DataFrame({
-        "study": [study for i in range(len(tpm.columns))], 
-        "time": sample_timepoints(study), 
-        }, index=tpm.columns))
+for study, jtk_file in zip(studies, snakemake.input.jtk):
     jtk = pandas.read_csv(jtk_file, sep="\t", index_col=0).sort_index()
     #jtk.loc[jtk.dropped, 'ADJ.P'] = 1 # JTK gives 0 p-values to bad data: we'll use 1 instead
     jtk_amp[study] = jtk.AMP
@@ -41,25 +35,29 @@ with open("results/study_classification.json") as f:
 
 robustness = pandas.read_csv(snakemake.input.robustness, sep="\t", index_col=0)['0'].sort_values(ascending=False)
 
-data_df = pandas.concat(data.values(), axis=1)
 jtk_amp_df = pandas.DataFrame(jtk_amp)
 jtk_p_df = pandas.DataFrame(jtk_p)
-metadata_df = pandas.concat(metadata, axis=0)
+
 # Drop all rows with no non-zero values
-data_df = data_df[~(data_df == 0).all(axis=1)]
+data = data[~(data == 0).all(axis=1)]
 jtk_amp_df = jtk_amp_df[~(jtk_amp_df == 0).all(axis=1)]
 jtk_p_df = jtk_p_df[~(jtk_p_df == 1).all(axis=1)]
-print(f"data has shape {data_df.shape}")
+
+#Drop outlier samples
+data = data.drop(columns=outlier_samples)
+sample_info = sample_info.drop(index=outlier_samples)
+print(f"data has shape {data.shape}")
+print(f"sample_info has shape {sample_info.shape}")
 print(f"jtk_amp has shape {jtk_amp_df.shape}")
 
 #Compute PCA on the expression levels (TPM)
-used_studies = metadata_df.study.unique()
-log_data = numpy.log(data_df+PSEUDOCOUNT)
+used_studies = sample_info.study.unique()
+log_data = numpy.log(data+PSEUDOCOUNT)
 PCA_by_TPM= sm.PCA(log_data.T, ncomp=2, method="nipals")
 
 # Color by study
 fig, ax = pylab.subplots(figsize=(12,12))
-for study, metadata in metadata_df.groupby('study'):
+for study, metadata in sample_info.groupby('study'):
     ax.scatter(
         PCA_by_TPM.factors.loc[metadata.index, "comp_0"],
         PCA_by_TPM.factors.loc[metadata.index, "comp_1"],
@@ -75,7 +73,7 @@ fig.savefig(OUT_DIR/f"all_samples_study.TPM.svg")
 
 
 # Color by time-of-day
-colors=metadata_df.time%24
+colors=sample_info.time%24
 
 fig, ax = pylab.subplots(figsize=(12,12))
 h=ax.scatter(
@@ -92,8 +90,8 @@ fig.savefig(OUT_DIR/f"all_samples_time.TPM.svg")
 
 # Color by study pca_type (paired/stranded/etc)
 fig, ax = pylab.subplots(figsize=(12,12))
-metadata_df['study_seq_type'] = metadata_df.study.map(study_classification)
-for study, metadata in metadata_df.groupby('study_seq_type'):
+sample_info['study_seq_type'] = sample_info.study.map(study_classification)
+for study, metadata in sample_info.groupby('study_seq_type'):
     ax.scatter(
         PCA_by_TPM.factors.loc[metadata.index, "comp_0"],
         PCA_by_TPM.factors.loc[metadata.index, "comp_1"],
@@ -129,7 +127,7 @@ fig.savefig(OUT_DIR/f"all_studies.JTK_amp.svg")
 
 # Color by sequencing classification
 fig, ax = pylab.subplots(figsize=(5,5))
-classifications = sorted(metadata_df.study_seq_type.unique())
+classifications = sorted(sample_info.study_seq_type.unique())
 for classification in classifications:
     studies = [study for study, class_ in study_classification.items()
                     if class_ == classification
