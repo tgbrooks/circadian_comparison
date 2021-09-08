@@ -50,18 +50,12 @@ targets = {
         "tissue": "Liver",
     },
 
-    "Weger18": {
-        "GSE": "GSE114400",
-        "sample_selector": lambda x: x['gut microbiome status'] == "conventional raised",
-        "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns]['zeitgeber time'])),
-        "tissue": "Liver",
-    },
-
     "Weger18_Liver_M": {
         "GSE": "GSE114400",
         "sample_selector": lambda x: x.Sex == "male" and x['gut microbiome status'] == "conventional raised",
         "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns]['zeitgeber time'])),
         "tissue": "Liver",
+        "seq":  "RiboZero",
     },
 
     "Weger18_Liver_F": {
@@ -69,6 +63,7 @@ targets = {
         "sample_selector": lambda x: x.Sex == "Female" and x['gut microbiome status'] == "conventional raised",
         "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns]['zeitgeber time'])),
         "tissue": "Liver",
+        "seq":  "RiboZero",
      },
 
     "Zhang14_RNAseq_Liver_M": {
@@ -97,6 +92,7 @@ targets = {
         "sample_selector": lambda x: x.genotype =="Wild type" and x.feeding == "Ad Libitum",
         "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns].title)),
         "tissue": "Liver",
+        "seq":  "RiboZero",
     },
 
     "Atger15_NightFeed": {
@@ -104,6 +100,7 @@ targets = {
         "sample_selector": lambda x: x.genotype =="Wild type" and x.feeding == "Night restricted",
         "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns].title)),
         "tissue": "Liver",
+        "seq":  "RiboZero",
     },
 
     "Koike12_RNAseq": {
@@ -118,6 +115,7 @@ targets = {
         "sample_selector": lambda x: x.tissue == "Liver" and x.genotype == "Alb-Cre" and x["feeding regimen"] == "AL",
         "time": lambda sample_data, expression_table: manella21_time(list(sample_data.loc[expression_table.columns].title)),
         "tissue": "Liver",
+        "seq": "3prime",
     },
 
     "Guan20_Liver": {
@@ -146,6 +144,7 @@ targets = {
         "sample_selector": lambda x: x['dietary regimen'] == "NRF",
         "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns]['zeitgeber time in hours'])),
         "tissue": "Liver",
+        "seq":  "RiboZero",
     },
 
     "Yang20": {
@@ -197,6 +196,7 @@ targets = {
         "sample_selector": lambda x: x.genotype == "wild type" and x.tissue == "total liver",
         "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns]['time point'])),
         "tissue": "Liver",
+        "seq":  "RiboZero",
     },
 
     "Cajan16": {
@@ -235,6 +235,7 @@ targets = {
         "sample_selector": lambda x: x.genotype == "control littermate",
         "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns]['timepoint'])),
         "tissue": "Liver",
+        "seq":  "RiboZero",
     },
 
     "Fader19": {
@@ -264,6 +265,7 @@ targets = {
         "sample_selector": lambda x: "LB" in x.title,
         "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns]['title'])),
         "tissue": "Liver",
+        "seq": "3prime",
     },
 
     "Greenwell19_NightFeed": {
@@ -271,6 +273,7 @@ targets = {
         "sample_selector": lambda x: "NR" in x.title,
         "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns]['title'])),
         "tissue": "Liver",
+        "seq": "3prime",
     },
 
     "Hidalgo19": {
@@ -355,6 +358,7 @@ targets = {
         "sample_selector": lambda x: x.diet == "Regular Chow" and "ZT" in x.title,
         "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns]['time'])),
         "tissue": "Liver",
+        "seq":  "RiboZero",
     },
 
     "Wu19": {
@@ -362,6 +366,7 @@ targets = {
         "sample_selector": lambda x: x.genotype == "WT" and "ZT" in x.title,
         "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns]['zeitgeber'])),
         "tissue": "Liver",
+        "seq":  "RiboZero",
     },
 
     "Yeung17": {
