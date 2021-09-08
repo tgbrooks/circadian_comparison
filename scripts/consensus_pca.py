@@ -106,6 +106,15 @@ h = ax.scatter(
 #fig.colorbar(h)
 fig.savefig(outdir / f"consensus_pca.gene_weights.Second.Third.png", dpi=300)
 
+# Save gene loadings to disk
+loadings = pandas.DataFrame({
+    "1": u[:,-1],
+    "2": u[:,-2],
+    "3": u[:,-3],
+    "4": u[:,-4],
+}, index=data.index)
+loadings.to_csv(outdir / "consensus_loadings.txt", sep="\t")
+
 
 # Compute and plot PCAs of each study individually
 # I.e. instead of a consesus PCA, we just perform PCA on 
