@@ -369,7 +369,7 @@ rule robustness:
     input:
         robustness = "results/{tissue}/robustness_score.txt",
         tpm = lambda wildcards: expand("data/{study}/expression.tpm.txt", study=studies_by_tissue(wildcards.tissue)),
-        jtk = lambda wildcards: expand("data/{study}/jtk/JTKresult_expression.tpm.txt", study=studies_by_tissue(wildcards.tissue)),
+        jtk = lambda wildcards: expand("data/{study}/jtk.results.txt", study=studies_by_tissue(wildcards.tissue)),
     params:
         studies = select_tissue(studies),
     output:

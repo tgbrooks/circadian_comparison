@@ -13,11 +13,10 @@ from studies import sample_timepoints
 studies = snakemake.params.studies
 DPI = 300
 
+# Load robustness scores and TPM
 robustness_score = pandas.read_csv(snakemake.input.robustness, sep="\t", index_col=0)["0"]
 data = {}
 for study, tpmfile in zip(studies, snakemake.input.tpm):
-    if study == "Weger18":
-        continue
     tpm = pandas.read_csv(tpmfile, sep="\t", index_col=0)
     data[study] = tpm
 
@@ -25,92 +24,102 @@ data_df = pandas.concat(data.values(), axis=1)
 
 med_tpm = data_df.median(axis=1)
 
-fig, ax = pylab.subplots(figsize=(12,12))
-ax.scatter(med_tpm, robustness_score+numpy.random.normal(size=len(robustness_score))*0.2)
+# Load JTK vlaues
+amp = {}
+per = {}
+phase = {}
+p = {}
+for study, jtkfile in zip(studies, snakemake.input.jtk):
+    jtk = pandas.read_csv(jtkfile, sep="\t", index_col=0)
+    #jtk.loc[(jtk['ADJ.P'] > 0.05) & (~jtk['dropped']), 'LAG'] = float("nan")
+    #jtk.loc[(jtk['ADJ.P'] > 0.05) & (~jtk['dropped']), 'PER'] = float("nan")
+    amp[study] = jtk['AMP']
+    per[study] = jtk["PER"]
+    p[study] = jtk["ADJ.P"]
+    phase[study] =jtk["LAG"]
+
+amp_df = pandas.concat(amp.values(), axis=1)
+per_df = pandas.concat(per.values(), axis=1)
+phase_df = pandas.concat(phase.values(), axis=1)
+p_df = pandas.concat(p.values(), axis=1)
+
+# Robustness groups
+robustness_cat = pandas.cut(
+    robustness_score,
+    bins = numpy.arange(0,robustness_score.max()+5,5),
+    include_lowest=True,
+)
+
+# Robustness score versus expression level (TPM)
+fig, ax = pylab.subplots(figsize=(4,4))
+ax.scatter(
+    med_tpm,
+    robustness_score+numpy.random.normal(size=len(robustness_score))*0.2,
+    s=1,
+    alpha=0.3)
 ax.set_xscale("log")
 ax.set_xlabel("Median TPM")
 ax.set_ylabel("Robustness Score")
 fig.savefig(snakemake.output.expression_level, dpi=DPI)
 
-#amp, period, phase from jtk, gc content
+#amp, period, phase from jtk
 
-data = {}
-for study, ampfile in zip(studies, snakemake.input.jtk):
-    if study == "Weger18":
-        continue
-    amp = pandas.read_csv(ampfile, sep="\t", index_col=0)["AMP"]
-    data[study] = amp
-
-data_df = pandas.concat(data.values(), axis=1)
-
-med_amp = data_df.median(axis=1)
-
-fig, ax = pylab.subplots(figsize=(12,12))
-ax.scatter(med_amp, robustness_score+numpy.random.normal(size=len(robustness_score))*0.2)
+# robustness verus amplitude
+med_amp = amp_df.median(axis=1)
+fig, ax = pylab.subplots(figsize=(4,4))
+ax.scatter(
+    med_amp,
+    robustness_score+numpy.random.normal(size=len(robustness_score))*0.2,
+    s=1,
+    alpha=0.3)
 ax.set_xscale("log")
 ax.set_xlabel("Median Amplitude")
 ax.set_ylabel("Robustness Score")
 fig.savefig(snakemake.output.amplitude, dpi=DPI)
 
-data = {}
-for study, perfile in zip(studies, snakemake.input.jtk):
-    if study == "Weger18":
-        continue
-    per = pandas.read_csv(perfile, sep="\t", index_col=0)["PER"]
-    data[study] = per
-
-data_df = pandas.concat(data.values(), axis=1)
-
-med_per = data_df.median(axis=1)
-#mean_per = scipy.stats.circmean(data_df, low=0, high=24, axis=1)
-
-fig, ax = pylab.subplots(figsize=(5,5))
+# Robustness versus period
+med_per = per_df.median(axis=1)
+fig, ax = pylab.subplots(figsize=(4,4))
 score_by_period = dict(list(robustness_score.groupby(med_per)))
+period_by_score = dict(list(med_per.groupby(robustness_cat)))
 parts = ax.violinplot(
-    list(score_by_period.values()),
-    positions=list(score_by_period.keys()),
+    #list(score_by_period.values()),
+    #positions=list(score_by_period.keys()),
+    list(period_by_score.values()),
+    positions=[interval.mid for interval in period_by_score.keys()],
     showextrema=False,
-    widths=0.8
+    widths=2.0,
+    vert=False,
 )
 for body in parts['bodies']:
     body.set_alpha(1)
-#ax.scatter(med_per+numpy.random.normal(size=len(robustness_score))*0.2, robustness_score+numpy.random.normal(size=len(robustness_score))*0.2)
-#ax.set_xscale("log")
 ax.set_xlim(19,25)
 ax.set_xlabel("Median Period")
 ax.set_ylabel("Robustness Score")
 fig.savefig(snakemake.output.period, dpi=DPI)
 
-data = {}
-for study, phasefile in zip(studies, snakemake.input.jtk):
-    if study == "Weger18":
-        continue
-    jtk = pandas.read_csv(phasefile, sep="\t", index_col=0)
-    p=jtk["ADJ.P"]
-    phase=jtk["LAG"]
-    phase[p>0.05]=float("nan")
-    data[study] = phase
-
-data_df = pandas.concat(data.values(), axis=1)
-
-#med_phase = data_df.median(axis=1)
+# By phase
 def round(x, to=1):
     return numpy.round(x/to)*to
-mean_phase = round(scipy.stats.circmean(data_df, low=0, high=24, axis=1, nan_policy="omit"), to=2)
-
-#fig, ax = pylab.subplots(figsize=(12,12))
-#ax.scatter(mean_phase, robustness_score+numpy.random.normal(size=len(robustness_score))*0.2)
-fig, ax = pylab.subplots(figsize=(7,6))
-score_by_phase = dict(list(robustness_score.groupby(mean_phase)))
-parts = ax.violinplot(
-    list(score_by_phase.values()),
-    positions=list(score_by_phase.keys()),
-    showextrema=False,
-    widths=0.8
-)
-for body in parts['bodies']:
-    body.set_alpha(1)
-#ax.set_xscale("log")
+mean_phase = scipy.stats.circmean(phase_df, low=0, high=24, axis=1, nan_policy="omit")
+mean_phase = pandas.Series(mean_phase, index=robustness_score.index)
+fig, ax = pylab.subplots(figsize=(5,4))
+#score_by_phase = dict(list(robustness_score.groupby(round(mean_phase, to=2) % 24)))
+#phase_by_score = dict(list(mean_phase.groupby(robustness_cat)))
+#parts = ax.violinplot(
+#    #list(score_by_phase.values()),
+#    #positions=list(score_by_phase.keys()),
+#    list(phase_by_score.values()),
+#    positions=[interval.mid for interval in phase_by_score.keys()],
+#    showextrema=False,
+#    widths=2.0,
+#    vert=False,
+#)
+#for body in parts['bodies']:
+#    body.set_alpha(0.5)
+ax.scatter(mean_phase, robustness_score, s=1, alpha=0.3, zorder=-5)
+ax.set_xticks([0,6,12,18,24])
 ax.set_xlabel("Mean Phase")
 ax.set_ylabel("Robustness Score")
 fig.savefig(snakemake.output.phase, dpi=DPI)
+
