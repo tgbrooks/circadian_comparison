@@ -55,7 +55,8 @@ for name, gene in zip(genes_symbol, genes_ID):
         mean_by_modtime = expression_data_series.groupby(time_mod24_data).mean()
         ax1.plot(mean_by_modtime.index,mean_by_modtime, marker=shape_by_study[study], color=color_by_study[study])
 
-    ax.set_xticks(numpy.arange(0, 72, step=3))
+    ax.set_xticks(numpy.arange(0, 72, step=6))
+    ax.set_xticks(numpy.arange(0, 72, step=3), minor=True)
     ax.set_xlabel("Time")
     ax.set_ylabel(name + " Expression TPM")
     ax.set_title(f"{gene} | {name}")
@@ -64,7 +65,8 @@ for name, gene in zip(genes_symbol, genes_ID):
     fig.tight_layout()
     fig.savefig(snakemake.output[gene], dpi=DPI)
 
-    ax1.set_xticks(numpy.arange(0, 24, step=3))
+    ax1.set_xticks(numpy.arange(0, 24, step=6))
+    ax1.set_xticks(numpy.arange(0, 24, step=3), minor=True)
     ax1.set_xlabel("Time")
     ax1.set_ylabel(name + " Expression TPM")
     ax1.set_title(f"{gene} | {name}")
