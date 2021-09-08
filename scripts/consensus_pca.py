@@ -14,7 +14,8 @@ import numpy
 import scipy.sparse.linalg
 import pylab
 
-tissue = snakemake.wildcards.tissue
+#tissue = snakemake.wildcards.tissue
+tissue = "Liver"
 
 outdir = pathlib.Path(f"results/{tissue}/consensus_pca/")
 outdir.mkdir(exist_ok=True)
@@ -65,8 +66,21 @@ normalized_data = pandas.concat(
 
 # Perform the consensus PCA
 u, s, vt = scipy.sparse.linalg.svds(normalized_data, k=4)
+total_var = (normalized_data**2).sum().sum()
 
 # Plot all the projections
+def format_study(study, max_length=15):
+    parts = study.split("_")
+    line = parts[0]
+    lines = []
+    for part in parts[1:]:
+        if len(line) + len(part) + 1 > max_length:
+            lines.append(line)
+            line = part 
+        else:
+            line = line + "_" + part
+    lines.append(line)
+    return '\n'.join(lines)
 
 nstudies = sample_info.study.nunique()
 ncols = 8
@@ -88,11 +102,16 @@ for (labelA, labelB), (A,B) in pca_components.items():
         scores = u.T @ std_data.loc[:, std_data.columns.map(sample_info.study) == study]
         times = sample_info[sample_info.study == study].time % 24
         ax.scatter(scores.values[A], scores.values[B], c=cmap(times / 24))
-        ax.set_title(study)
+        ax.set_title(format_study(study))
         ax.set_xticks([])
         ax.set_yticks([])
     for ax in axes.flatten()[remove_unplotted]:
         ax.remove()
+    A_pct_var = s[A]**2 / total_var
+    B_pct_var = s[B]**2 / total_var
+    fig.supxlabel(f"{labelA} PC ({A_pct_var:0.1%})")
+    fig.supylabel(f"{labelB} PC ({B_pct_var:0.1%})")
+    fig.tight_layout()
     fig.savefig(outdir / f"consensus_pca.{labelA}.{labelB}.png", dpi=300)
 
 # Plot the gene loadings
@@ -133,9 +152,12 @@ for (labelA, labelB), (A,B) in pca_components.items():
         scores = u2.T @ std_study_data
         times = sample_info[sample_info.study == study].time % 24
         ax.scatter(scores.values[A], scores.values[B], c=cmap(times / 24))
-        ax.set_title(study)
+        ax.set_title(format_study(study))
         ax.set_xticks([])
         ax.set_yticks([])
     for ax in axes.flatten()[remove_unplotted]:
         ax.remove()
+    fig.supxlabel(f"{labelA} PC")
+    fig.supylabel(f"{labelB} PC")
+    fig.tight_layout()
     fig.savefig(outdir / f"individual_pca.{labelA}.{labelB}.png", dpi=300)
