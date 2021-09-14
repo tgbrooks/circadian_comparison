@@ -31,8 +31,8 @@ phase = {}
 p = {}
 for study, jtkfile in zip(studies, snakemake.input.jtk):
     jtk = pandas.read_csv(jtkfile, sep="\t", index_col=0)
-    #jtk.loc[(jtk['ADJ.P'] > 0.05) & (~jtk['dropped']), 'LAG'] = float("nan")
-    #jtk.loc[(jtk['ADJ.P'] > 0.05) & (~jtk['dropped']), 'PER'] = float("nan")
+    jtk.loc[(jtk['ADJ.P'] >= 0.05) | (jtk['dropped']), 'LAG'] = float("nan")
+    jtk.loc[(jtk['ADJ.P'] >= 0.05) | (jtk['dropped']), 'PER'] = float("nan")
     amp[study] = jtk['AMP']
     per[study] = jtk["PER"]
     p[study] = jtk["ADJ.P"]
@@ -82,17 +82,34 @@ med_per = per_df.median(axis=1)
 fig, ax = pylab.subplots(figsize=(4,4))
 score_by_period = dict(list(robustness_score.groupby(med_per)))
 period_by_score = dict(list(med_per.groupby(robustness_cat)))
-parts = ax.violinplot(
-    #list(score_by_period.values()),
-    #positions=list(score_by_period.keys()),
-    list(period_by_score.values()),
-    positions=[interval.mid for interval in period_by_score.keys()],
-    showextrema=False,
-    widths=2.0,
-    vert=False,
+bins = numpy.linspace(18.5,24.5,7)
+ax.scatter(
+    med_per + numpy.random.uniform(-0.4, 0.4, size=len(med_per)),
+    robustness_score,
+    alpha=0.3,
+    s=1,
 )
-for body in parts['bodies']:
-    body.set_alpha(1)
+#for score_cat, periods in period_by_score.items():
+#    ax.hist(
+#        periods,
+#        bins = bins,
+#        #density=True,
+#        weights=[0.9*(score_cat.right - score_cat.left) / periods.count()
+#                    for i in range(len(periods))],
+#        bottom = score_cat.left,
+#        color='k',
+#    )
+#parts = ax.violinplot(
+#    #list(score_by_period.values()),
+#    #positions=list(score_by_period.keys()),
+#    list(period_by_score.values()),
+#    positions=[interval.mid for interval in period_by_score.keys()],
+#    showextrema=False,
+#    widths=2.0,
+#    vert=False,
+#)
+#for body in parts['bodies']:
+#    body.set_alpha(1)
 ax.set_xlim(19,25)
 ax.set_xlabel("Median Period")
 ax.set_ylabel("Robustness Score")

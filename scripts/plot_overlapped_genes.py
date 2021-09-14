@@ -20,7 +20,7 @@ selected_genes = {}
 for study, jtkfile in zip(studies, snakemake.input.jtk):
     jtk = pandas.read_csv(jtkfile, sep="\t", index_col=0)
     jtk = jtk.sort_values("ADJ.P")
-    selected_genes[study] = jtk.index[:n_genes]
+    selected_genes[study] = jtk[~jtk.dropped].index[:n_genes] #Top genes by JTK
 
 # Gather overlaps between each pair of studies in their top 1000 genes
 results = {}
@@ -41,7 +41,7 @@ study_clustering = scipy.cluster.hierarchy.linkage(results_df, optimal_ordering=
 study_ordering = scipy.cluster.hierarchy.leaves_list(study_clustering)
 study_order = results_df.index[study_ordering]
 fig, ax = pylab.subplots(figsize=(10,10))
-h = ax.imshow(results_df.loc[study_order,study_order])
+h = ax.imshow(results_df.loc[study_order,study_order], vmin=0, vmax=n_genes)
 ax.xaxis.tick_top()
 ax.set_xticks(numpy.arange(len(study_order)))
 ax.set_xticklabels(study_order, rotation=90)
@@ -55,11 +55,8 @@ fig.savefig(snakemake.output.num_common_genes_heatmap, dpi=DPI)
 p_value_cutoff = 0.05
 selected_genes = {}
 for study, jtkfile in zip(studies, snakemake.input.jtk):
-    if study in ["Lahens15", "Manella21_Liver", "Zhang14_RNAseq_Liver_M"]:
-        continue
     jtk = pandas.read_csv(jtkfile, sep="\t", index_col=0)
-    #jtk = jtk.sort_values("ADJ.P")
-    selected_genes[study] = jtk.index[jtk["ADJ.P"]<p_value_cutoff]
+    selected_genes[study] = jtk.index[(jtk["ADJ.P"]<p_value_cutoff) & (~jtk.dropped)]
 
 robustness_score = pandas.Series(0, index=jtk.index)
 
@@ -79,8 +76,6 @@ robustness_score.to_csv(snakemake.output.robustness_score, sep="\t")
 data = {}
 metadata = []
 for study, tpmfile in zip(studies, snakemake.input.tpm):
-    if study == "Weger18":
-        continue
     tpm = pandas.read_csv(tpmfile, sep="\t", index_col=0)
     time = sample_timepoints(study)
     metadata.append(pandas.DataFrame({

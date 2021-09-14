@@ -395,8 +395,6 @@ rule all_samples:
         all_num_reads = pandas.DataFrame()
         all_samples = []
         for study, tpmfile in zip(params.studies, input.tpm):
-            if study == "Weger18":
-                continue
             tpm = pandas.read_csv(tpmfile, sep="\t", index_col="Name")
             time = sample_timepoints(study)
             all_samples.append(pandas.DataFrame({
@@ -411,8 +409,6 @@ rule all_samples:
         all_samples_df.to_csv(output[2], sep="\t")
 
         for study, numreadsfile in zip(params.studies, input.num_reads):
-            if study == "Weger18":
-                continue
             num_reads = pandas.read_csv(numreadsfile, sep="\t", index_col="Name")
             all_num_reads = pandas.concat([all_num_reads, num_reads], axis=1)
         all_num_reads.insert(0, 'Symbol', pandas.read_csv("gene_name.txt", sep="\t", index_col="ID")['GeneSymbol'])
