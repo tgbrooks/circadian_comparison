@@ -34,6 +34,7 @@ targets = {
         "sample_selector": lambda x: x['genotype/variation'] == "WT" and x.Sex == "male",
         "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns]['sample collection time'])),
         "tissue": "Liver",
+        "highlight": True,
     },
 
     "Yang16B_F": {
@@ -56,6 +57,7 @@ targets = {
         "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns]['zeitgeber time'])),
         "tissue": "Liver",
         "seq":  "RiboZero",
+        "highlight": True,
     },
 
     "Weger18_Liver_F": {
@@ -85,6 +87,7 @@ targets = {
         "sample_selector": lambda x: x.genotype =="Wild type" and x.tissue == "Liver",
         "time": lambda sample_data, expression_table: only_number(list(sample_data.loc[expression_table.columns]['time point'])),
         "tissue": "Liver",
+        "highlight": True,
     },
 
     "Atger15_AdLib": {
@@ -93,6 +96,7 @@ targets = {
         "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns].title)),
         "tissue": "Liver",
         "seq":  "RiboZero",
+        "highlight": True,
     },
 
     "Atger15_NightFeed": {
@@ -116,6 +120,7 @@ targets = {
         "time": lambda sample_data, expression_table: manella21_time(list(sample_data.loc[expression_table.columns].title)),
         "tissue": "Liver",
         "seq": "3prime",
+        "highlight": True,
     },
 
     "Guan20_Liver": {
@@ -123,6 +128,7 @@ targets = {
         "sample_selector": lambda x: x['genotype/variation'] == "WT" and x.tissue == "Liver" and x.description == "Ad_lib_feeding",
         "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns].title)),
         "tissue": "Liver",
+        "highlight": True,
     },
 
     "Koronowski19_F": {
@@ -166,6 +172,7 @@ targets = {
         "sample_selector": lambda x: x.genotype == "Bmal1  WT" and x['feeding regimen'] == "AL",
         "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns]['zeitgeber time'])),
         "tissue": "Liver",
+        "highlight": True,
     },
 
     "Weger20_HlfDbpTefWT": {
@@ -173,6 +180,7 @@ targets = {
         "sample_selector": lambda x: x.genotype == "Hlf+/+/Dbp+/+/Tef+/+" and x['feeding regimen'] == "AL",
         "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns]['zeitgeber time'])),
         "tissue": "Liver",
+        "highlight": True,
     },
 
     "Weger20_CryWT": {
@@ -180,6 +188,7 @@ targets = {
         "sample_selector": lambda x: x.genotype == "Cry1/2_WT" and x['feeding regimen'] == "AL",
         "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns]['zeitgeber time'])),
         "tissue": "Liver",
+        "highlight": True,
     },
 
     "Mermet18": {
@@ -243,6 +252,7 @@ targets = {
         "sample_selector": lambda x: x.treatment == "Sesame Oil Control",
         "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns]['timepoint'])),
         "tissue": "Liver",
+        "highlight": True,
     },
 
     "Gaucher19_Chronic_Cntrl": {
@@ -266,6 +276,7 @@ targets = {
         "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns]['title'])),
         "tissue": "Liver",
         "seq": "3prime",
+        "highlight": True,
     },
 
     "Greenwell19_NightFeed": {
@@ -302,6 +313,7 @@ targets = {
         "sample_selector": lambda x: x.genotype == "WT" and x.treatment == "H2O" and x.library_source == "transcriptomic",
         "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns]['collection time point'])),
         "tissue": "Liver",
+        "highlight": True,
     },
 
     "Li19_Young": {
@@ -323,6 +335,7 @@ targets = {
         "sample_selector": lambda x: x.tissue == "Liver",
         "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns]['time'])),
         "tissue": "Liver",
+        "highlight": True,
     },
 
     "Quagliarini19_NormalDiet": {
@@ -330,6 +343,7 @@ targets = {
         "sample_selector": lambda x: "control REP" in x.title,
         "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns]['title'])),
         "tissue": "Liver",
+        "highlight": True,
     },
 
     "Quagliarini19_HFD": {
@@ -344,6 +358,7 @@ targets = {
         "sample_selector": lambda x: "LFD WT" in x.title,
         "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns]['title'])),
         "tissue": "Liver",
+        "highlight": True,
     },
 
     "Quagliarini19_HFD_WTvsKO": {
@@ -359,6 +374,7 @@ targets = {
         "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns]['time'])),
         "tissue": "Liver",
         "seq":  "RiboZero",
+        "highlight": True,
     },
 
     "Wu19": {
@@ -393,7 +409,14 @@ targets = {
 }
 
 # List of studies to perform
-studies = ["Lahens15", "Weger18_Liver_M", "Weger18_Liver_F", "Zhang14_RNAseq_Liver_M", "Pan19", "Morton20_Liver", "Atger15_AdLib", "Atger15_NightFeed", "Manella21_Liver", "Yang16A_M", "Yang16B_M", "Yang16B_F", "Guan20_Liver", "Koronowski19_F", "Xin21_Liver_NightFeed", "Yang20", "Kinouchi18_Liver", "Weger20_Bmal1WT", "Weger20_HlfDbpTefWT", "Weger20_CryWT", "Mermet18", "Benegiamo18", "Cajan16", "Chaix19_AdLib_HFD", "Chaix19_NightFeed_HFD", "Chen19", "Du14", "Fader19", "Gaucher19_Chronic_Cntrl", "Greenwell19_AdLib", "Greenwell19_NightFeed", "Hidalgo19", "Hirako18", "Levine20", "Li19_Young", "Li19_Old", "Menet12", "Quagliarini19_NormalDiet", "Quagliarini19_HFD", "Quagliarini19_NormalDiet_WTvsKO", "Quagliarini19_HFD_WTvsKO", "Stubblefield18", "Wu19", "Yeung17", "Zhang14_RNAseq_Kidney_M", "Castelo-Szekely17", ]
+studies = [
+    # Highlighted studies -- all consistent design
+    "Weger18_Liver_M", "Morton20_Liver", "Atger15_AdLib", "Manella21_Liver", "Yang16B_M", "Weger20_Bmal1WT", "Weger20_HlfDbpTefWT", "Weger20_CryWT", "Fader19", "Greenwell19_AdLib", "Levine20", "Quagliarini19_NormalDiet", "Quagliarini19_NormalDiet_WTvsKO", "Stubblefield18", "Menet12", "Guan20_Liver",
+    # Possible highlights
+    "Hidalgo19", "Li19_Young", "Li19_Old", "Du14", "Pan19",
+    # Remaining
+    "Lahens15", "Weger18_Liver_F", "Zhang14_RNAseq_Liver_M", "Atger15_NightFeed", "Yang16A_M", "Yang16B_F", "Koronowski19_F", "Xin21_Liver_NightFeed", "Yang20", "Kinouchi18_Liver", "Mermet18", "Benegiamo18", "Cajan16", "Chaix19_AdLib_HFD", "Chaix19_NightFeed_HFD", "Chen19", "Gaucher19_Chronic_Cntrl", "Greenwell19_NightFeed", "Hirako18", "Quagliarini19_HFD", "Quagliarini19_HFD_WTvsKO", "Wu19", "Yeung17", "Zhang14_RNAseq_Kidney_M", "Castelo-Szekely17", ]
+#studies = ["Lahens15", "Weger18_Liver_M", "Weger18_Liver_F", "Zhang14_RNAseq_Liver_M", "Pan19", "Morton20_Liver", "Atger15_AdLib", "Atger15_NightFeed", "Manella21_Liver", "Yang16A_M", "Yang16B_M", "Yang16B_F", "Guan20_Liver", "Koronowski19_F", "Xin21_Liver_NightFeed", "Yang20", "Kinouchi18_Liver", "Weger20_Bmal1WT", "Weger20_HlfDbpTefWT", "Weger20_CryWT", "Mermet18", "Benegiamo18", "Cajan16", "Chaix19_AdLib_HFD", "Chaix19_NightFeed_HFD", "Chen19", "Du14", "Fader19", "Gaucher19_Chronic_Cntrl", "Greenwell19_AdLib", "Greenwell19_NightFeed", "Hidalgo19", "Hirako18", "Levine20", "Li19_Young", "Li19_Old", "Menet12", "Quagliarini19_NormalDiet", "Quagliarini19_HFD", "Quagliarini19_NormalDiet_WTvsKO", "Quagliarini19_HFD_WTvsKO", "Stubblefield18", "Wu19", "Yeung17", "Zhang14_RNAseq_Kidney_M", "Castelo-Szekely17", ]
 
 # List of all tissues being run
 tissues = list(set(targets[study]['tissue'] for study in studies))
