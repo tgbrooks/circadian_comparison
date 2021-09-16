@@ -30,6 +30,7 @@ rule all:
                 "PCA",
                 "robustness/expression_level_robust.png",
                 "tpm_all_samples.txt",
+                "jtk.results.txt",
                 "amplitude_scatter_grid.png",
                 "consensus_pca/",
                 "outlier_samples.txt",
@@ -413,6 +414,23 @@ rule all_samples:
             all_num_reads = pandas.concat([all_num_reads, num_reads], axis=1)
         all_num_reads.insert(0, 'Symbol', pandas.read_csv("gene_name.txt", sep="\t", index_col="ID")['GeneSymbol'])
         all_num_reads.to_csv(output[1], sep ="\t", index="Name")
+
+rule all_jtk: # Gather all JTK results of a tissue together
+    input:
+        jtk = lambda wildcards: expand("data/{study}/jtk.results.txt", study=studies_by_tissue(wildcards.tissue)),
+    params:
+        studies = select_tissue(studies),
+    output:
+        all_jtk = "results/{tissue}/jtk.results.txt",
+    run:
+        jtks = []
+        for study, jtk_file in zip(params.studies, input.jtk):
+            jtk = pandas.read_csv(jtk_file, sep="\t")
+            jtk.insert(1, "study", study)
+            jtks.append(jtk)
+        all_jtk = pandas.concat(jtks, axis=0)
+        all_jtk.rename(columns={"CycID": "ID"}, inplace=True)
+        all_jtk.to_csv(output.all_jtk, sep="\t", index=False)
 
 rule outlier_detection:
     input:
