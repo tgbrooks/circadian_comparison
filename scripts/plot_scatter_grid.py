@@ -7,6 +7,7 @@ matplotlib.use("Agg")
 import pylab
 
 import util
+from styles import format_study_name
 
 studies = snakemake.params.studies
 N_studies = len(studies)
@@ -18,13 +19,14 @@ studies_per = {}
 studies_phase = {}
 for file, study in zip(snakemake.input.jtk, studies):
     jtk = pandas.read_csv(file, sep="\t", index_col=0)
-    p=jtk["ADJ.P"].copy()
+    p=jtk["ADJ.P"]
+    q=jtk["qvalue"]
     amp=jtk["AMP"].copy()
     per=jtk["PER"].copy()
     phase=jtk["LAG"].copy()
-    amp[p>0.05]=float("nan")
-    per[p>0.05]=float("nan")
-    phase[p>0.05]=float("nan")
+    amp[q>0.05]=float("nan")
+    per[q>0.05]=float("nan")
+    phase[q>0.05]=float("nan")
     studies_amp[study]=amp
     studies_per[study]=per
     studies_phase[study]=phase
@@ -62,34 +64,35 @@ for study1 in studies:
         row+=1
     col+=1
 for ax, label in zip(axs[0], studies):
-    ax.set_title(label)
+    ax.set_title(format_study_name(label))
 for ax, label in zip(axs[:,0], studies): 
-    ax.set_ylabel(label)
+    ax.set_ylabel(format_study_name(label))
 share_xy(axs)
 fig.tight_layout()
 fig.savefig(snakemake.output.amplitude, dpi=DPI)
 
+# Not  running now since pretty uninformative: too few distinct values to tell anything
 #period
-print("Starting period scatter plot")
-col=0
-fig, axs = pylab.subplots(figsize=(1.5+1.5*N_studies,1.5+1.5*N_studies), nrows=N_studies, ncols=N_studies, squeeze=False)
-for study1 in studies:
-    per1 = studies_per[study1]
-    row=0
-    for study2 in studies:
-        per2 = studies_per[study2]
-        axs[col,row].scatter(per1+numpy.random.normal(size=len(per1))*0.2, per2+numpy.random.normal(size=len(per2))*0.2, s=1)
-        axs[col,row].set_xlim((19, 29))
-        axs[col,row].set_ylim((19, 29))
-        row+=1
-    col+=1
-for ax, label in zip(axs[0], studies):
-    ax.set_title(label)
-for ax, label in zip(axs[:,0], studies):
-    ax.set_ylabel(label)
-share_xy(axs)
-fig.tight_layout()
-fig.savefig(snakemake.output.period, dpi=DPI)
+#print("Starting period scatter plot")
+#col=0
+#fig, axs = pylab.subplots(figsize=(1.5+1.5*N_studies,1.5+1.5*N_studies), nrows=N_studies, ncols=N_studies, squeeze=False)
+#for study1 in studies:
+#    per1 = studies_per[study1]
+#    row=0
+#    for study2 in studies:
+#        per2 = studies_per[study2]
+#        axs[col,row].scatter(per1+numpy.random.normal(size=len(per1))*0.2, per2+numpy.random.normal(size=len(per2))*0.2, s=1)
+#        axs[col,row].set_xlim((19, 29))
+#        axs[col,row].set_ylim((19, 29))
+#        row+=1
+#    col+=1
+#for ax, label in zip(axs[0], studies):
+#    ax.set_title(format_study_name(label))
+#for ax, label in zip(axs[:,0], studies):
+#    ax.set_ylabel(format_study_name(label))
+#share_xy(axs)
+#fig.tight_layout()
+#fig.savefig(snakemake.output.period, dpi=DPI)
 
 #phase
 print("Starting Phase scatter plot")
@@ -104,9 +107,9 @@ for study1 in studies:
         row+=1
     col+=1
 for ax, label in zip(axs[0], studies):
-    ax.set_title(label)
+    ax.set_title(format_study_name(label))
 for ax, label in zip(axs[:,0], studies):
-    ax.set_ylabel(label)
+    ax.set_ylabel(format_study_name(label))
 share_xy(axs)
 fig.tight_layout()
 fig.savefig(snakemake.output.phase, dpi=DPI)

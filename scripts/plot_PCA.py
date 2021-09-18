@@ -127,7 +127,7 @@ fig.savefig(OUT_DIR/f"all_studies.JTK_amp.svg")
 
 # Color by sequencing classification
 fig, ax = pylab.subplots(figsize=(5,5))
-classifications = sorted(sample_info.study_seq_type.unique())
+classifications = sorted(str(x) for x in sample_info.study_seq_type.unique())
 for classification in classifications:
     studies = [study for study, class_ in study_classification.items()
                     if class_ == classification

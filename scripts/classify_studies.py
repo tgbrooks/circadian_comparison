@@ -8,7 +8,7 @@ import json
 from studies import studies
 
 metadata = {}
-for zip(study, meta_info in zip(studies, snakemake.input.meta_info):
+for study, meta_info in zip(studies, snakemake.input.meta_info):
     with open(meta_info) as f:
         metadata[study] = json.load(f)
 

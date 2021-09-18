@@ -14,6 +14,8 @@ import numpy
 import scipy.sparse.linalg
 import pylab
 
+from styles import format_study_name
+
 tissue = snakemake.wildcards.tissue
 #tissue = "Liver"
 
@@ -40,21 +42,6 @@ assert (robustness.index == data.index.get_level_values(0)).all()
 
 
 # Utility functions
-# Plot all the projections
-def format_study(study, max_length=15):
-    parts = study.split("_")
-    line = parts[0]
-    lines = []
-    for part in parts[1:]:
-        if len(line) + len(part) + 1 > max_length:
-            lines.append(line)
-            line = part
-        else:
-            line = line + "_" + part
-    lines.append(line)
-    return '\n'.join(lines)
-
-
 def standardize(x):
     ''' z-score data '''
     std =  x.sub(x.mean(axis=1), axis=0).div(x.std(axis=1), axis=0)
@@ -143,7 +130,7 @@ ncols = 8
 nrows = math.ceil(nstudies / ncols)
 remove_unplotted = slice(0,0) if nstudies == ncols * nrows else slice(-(nrows* ncols) + nstudies, None)
 fig, axes = pylab.subplots(
-    figsize=(2.5*nrows, 2.5*nrows),
+    figsize=(1+2.5*ncols, 2.5*nrows),
     ncols=ncols, nrows=nrows,
     sharex=True, sharey=True
     )
@@ -152,7 +139,7 @@ for (study, ax) in zip(sample_info.study.unique(), axes.flatten()):
     scores = joint_loading @ std_data.loc[:, std_data.columns.map(sample_info.study) == study]
     times = sample_info[sample_info.study == study].time % 24
     ax.scatter(scores.values[0], scores.values[1], c=cmap(times / 24))
-    ax.set_title(format_study(study))
+    ax.set_title(format_study_name(study))
     ax.set_xticks([])
     ax.set_yticks([])
 for ax in axes.flatten()[remove_unplotted]:
@@ -177,7 +164,7 @@ pca_components = {
 }
 for (labelA, labelB), (A,B) in pca_components.items():
     fig, axes = pylab.subplots(
-        figsize=(2.5*nrows, 2.5*nrows),
+        figsize=(1+2.5*ncols, 2.5*nrows),
         ncols=ncols, nrows=nrows,
         sharex=True, sharey=True
         )
@@ -186,7 +173,7 @@ for (labelA, labelB), (A,B) in pca_components.items():
         scores = u.T @ std_data.loc[:, std_data.columns.map(sample_info.study) == study]
         times = sample_info[sample_info.study == study].time % 24
         ax.scatter(scores.values[A], scores.values[B], c=cmap(times / 24))
-        ax.set_title(format_study(study))
+        ax.set_title(format_study_name(study))
         ax.set_xticks([])
         ax.set_yticks([])
     for ax in axes.flatten()[remove_unplotted]:
@@ -224,7 +211,7 @@ loadings.to_csv(outdir / "consensus_loadings.txt", sep="\t")
 # each study, ignoring the rest.
 for (labelA, labelB), (A,B) in pca_components.items():
     fig, axes = pylab.subplots(
-        figsize=(2.5*nrows, 2.5*nrows),
+        figsize=(1+2.5*ncols, 2.5*nrows),
         ncols=ncols, nrows=nrows,
         sharex=True, sharey=True
         )
@@ -236,7 +223,7 @@ for (labelA, labelB), (A,B) in pca_components.items():
         scores = u2.T @ std_study_data
         times = sample_info[sample_info.study == study].time % 24
         ax.scatter(scores.values[A], scores.values[B], c=cmap(times / 24))
-        ax.set_title(format_study(study))
+        ax.set_title(format_study_name(study))
         ax.set_xticks([])
         ax.set_yticks([])
     for ax in axes.flatten()[remove_unplotted]:

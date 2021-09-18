@@ -8,27 +8,20 @@ matplotlib.use("Agg")
 import pylab
 
 import util
+from styles import format_study_name
 
 studies = snakemake.params.studies
 N_studies = len(studies)
 
-def format_name(study):
-    import studies
-    if studies.targets[study].get('highlight', False):
-        return study + "*"
-    return study
-
 DPI = 300
 N_COLUMNS = 3
 # Q-value cutoff to call significantly rhythmic
-STRICT_Q_CUTOFF = 0.01
-LOOSE_Q_CUTOFF = 0.10
 Q_CUTOFFS = {
-    "loose": LOOSE_Q_CUTOFF,
-    "strict": STRICT_Q_CUTOFF,
+    "loose": 0.10,
+    "strict": 0.01,
 }
 color_by_strictness = {
-    "loose": "blue",
+    "loose": "lightblue",
     "strict": "darkblue",
 }
 
@@ -82,7 +75,7 @@ for strictness, periods_ in periods.items():
     for ax, study in zip(axes.flatten(), include_studies):
         period = periods_[study]
         ax.hist(period, bins=bins, color=color_by_strictness[strictness])
-        ax.set_ylabel(format_name(study), rotation=0, horizontalalignment="right")
+        ax.set_ylabel(format_study_name(study), rotation=0, horizontalalignment="right")
 [ax.set_xlabel("Period (hrs)") for ax in axes[-1,:]]
 for ax in axes.flatten()[remove_unplotted]:
     ax.remove()
@@ -97,7 +90,7 @@ for strictness, phases_ in phases.items():
     for ax, study in zip(axes.flatten(), include_studies):
         phase = phases_[study]
         ax.hist(phase, bins=bins, color=color_by_strictness[strictness])
-        ax.set_ylabel(format_name(study), rotation=0, horizontalalignment="right")
+        ax.set_ylabel(format_study_name(study), rotation=0, horizontalalignment="right")
         ax.set_xlim(0,24)
         ax.set_xticks(numpy.arange(0,30, 6))
 [ax.set_xlabel("Phase (hrs)") for ax in axes[-1,:]]
@@ -114,7 +107,7 @@ for strictness, amplitudes_ in amplitudes.items():
     for ax, study in zip(axes.flatten(), include_studies):
         amplitude = amplitudes_[study]
         ax.hist(amplitude, bins=bins, color=color_by_strictness[strictness])
-        ax.set_ylabel(format_name(study), rotation=0, horizontalalignment="right")
+        ax.set_ylabel(format_study_name(study), rotation=0, horizontalalignment="right")
         ax.set_xscale("log")
 [ax.set_xlabel("Amplitude (hrs)") for ax in axes[-1,:]]
 for ax in axes.flatten()[remove_unplotted]:
