@@ -34,6 +34,7 @@ rule all:
                 "amplitude_scatter_grid.png",
                 "consensus_pca/",
                 "outlier_samples.txt",
+                "assess_jtk/period_statistics.txt"
             ]
         ),
         # NOTE: big computation, ~500 hours of CPU time
@@ -237,7 +238,7 @@ rule classify_studies:
     input:
         meta_info = expand("data/{study}/salmon.meta_info.json", study=studies)
     output:
-        "data/study_classification.json"
+        "results/study_classification.json"
     script:
         "scripts/classify_studies.py"
 
@@ -369,6 +370,7 @@ rule plot_PCA:
         jtk = lambda wildcards: expand("data/{study}/jtk.results.txt", study=studies_by_tissue(wildcards.tissue)),
         outlier_samples = "results/{tissue}/outlier_samples.txt",
         robustness = "results/{tissue}/robustness_score.txt",
+        study_classification = "results/study_classification.json",
     params:
         studies = select_tissue(studies),
     resources:
@@ -460,7 +462,6 @@ rule scatter_grid:
         studies = select_tissue(studies),
     output:
         amplitude = "results/{tissue}/amplitude_scatter_grid.png",
-        period = "results/{tissue}/period_scatter_grid.png",
         phase = "results/{tissue}/phase_scatter_grid.png",
     resources: 
         mem_mb = 12000
@@ -533,3 +534,13 @@ rule plot_spline_fits:
         gene_plot_dir = directory("results/{tissue}/spline_fit/gene_plots/"),
     script:
         "scripts/plot_spline_fits.py"
+
+rule assess_period_differences:
+    input:
+        jtk = "results/{tissue}/jtk.results.txt",
+        robustness = "results/{tissue}/robustness_score.txt",
+        sample_info = "results/{tissue}/all_samples_info.txt",
+    output:
+        "results/{tissue}/assess_jtk/period_statistics.txt",
+    script:
+        "scripts/assess_period_differences.py"
