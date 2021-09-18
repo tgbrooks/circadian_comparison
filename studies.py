@@ -120,7 +120,7 @@ targets = {
         "time": lambda sample_data, expression_table: manella21_time(list(sample_data.loc[expression_table.columns].title)),
         "tissue": "Liver",
         "seq": "3prime",
-        "highlight": True,
+        #"highlight": True, # Genotype is not strictly WT
     },
 
     "Guan20_Liver": {
@@ -292,6 +292,7 @@ targets = {
         "sample_selector": lambda x: x.genotype == "WT",
         "time": lambda sample_data, expression_table: list(sample_data.loc[expression_table.columns]['zeitgeber time']),
         "tissue": "Liver",
+        "highlight": True,
     },
 
     "Hirako18": {
@@ -306,6 +307,7 @@ targets = {
         "sample_selector": lambda x: x['insert type'] == "total RNA",
         "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns]['timepoint'])),
         "tissue": "Liver",
+        "trim_adaptor": "-a AGATCGGAAGAGCACACGTCTGAACTCCAGTCAC --match-read-wildcards -m 6",
     },
 
     "Levine20": {
@@ -391,6 +393,7 @@ targets = {
         "sample_selector": lambda x: x.genotype == "WT" and "RNASeq" in x.title,
         "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns]['time'])),
         "tissue": "Kidney",
+        "seq":  "unkown",
     },
 
     "Zhang14_RNAseq_Kidney_M": {
@@ -398,6 +401,7 @@ targets = {
         "sample_selector": lambda x: x.tissue == "kidney",
         "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns].title)),
         "tissue": "Kidney",
+        "seq":  "unkown",
     },
 
     "Castelo-Szekely17": {
@@ -405,18 +409,49 @@ targets = {
         "sample_selector": lambda x: "total RNA" in x.title,
         "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns].title)),
         "tissue": "Kidney",
+        "seq":  "unkown",
+        "trim_adaptor": "-a AGATCGGAAGAGCACACGTCTGAACTCCAGTCAC --match-read-wildcards -m 6",
+    },
+
+    "Mermet18_Kidney_NightFeed": {
+        "GSE": "GSE101423",
+        "GSE_postfix": "-GPL17021",
+        "sample_selector":  lambda x: x.genotype == "WT" and x.tissue == "Kidney" and x.source_name_ch1 == "PolyA-selected RNA",
+        "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns]['title'])),
+        "tissue": "Kidney",
+        "seq":  "unkown",
+    },
+
+    "Mermet18_Kidney": {
+        "GSE": "GSE101423",
+        "GSE_postfix": "-GPL19057",
+        "sample_selector":  lambda x: x.genotype == "Cry1IntronWT" and x.tissue == "Kidney" and x.source_name_ch1 == "PolyA-selected RNA",
+        "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns]['title'])),
+        "tissue": "Kidney",
+        "seq":  "unkown",
+    },
+
+    "Xin21_Kidney_NightFeed": {
+        "GSE": "GSE151221",
+        "sample_selector": lambda x: x['dietary regimen'] == "NRF",
+        "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns]['zeitgeber time in hours'])),
+        "tissue": "Kidney",
+        "seq":  "RiboZero",
     },
 }
 
 # List of studies to perform
 studies = [
     # Highlighted studies -- all consistent design
-    "Weger18_Liver_M", "Morton20_Liver", "Atger15_AdLib", "Manella21_Liver", "Yang16B_M", "Weger20_Bmal1WT", "Weger20_HlfDbpTefWT", "Weger20_CryWT", "Fader19", "Greenwell19_AdLib", "Levine20", "Quagliarini19_NormalDiet", "Quagliarini19_NormalDiet_WTvsKO", "Stubblefield18", "Menet12", "Guan20_Liver",
+    "Weger18_Liver_M", "Morton20_Liver", "Atger15_AdLib", "Yang16B_M", "Weger20_Bmal1WT", "Weger20_HlfDbpTefWT", "Weger20_CryWT", "Fader19", "Greenwell19_AdLib", "Levine20", "Quagliarini19_NormalDiet", "Quagliarini19_NormalDiet_WTvsKO", "Stubblefield18", "Menet12", "Guan20_Liver", "Hidalgo19",
     # Possible highlights
-    "Hidalgo19", "Li19_Young", "Li19_Old", "Du14", "Pan19",
+    "Du14", "Pan19",
+    #"Janich15", # Different strain, but still C57BL/6; bad sequencing?
     # Remaining
-    "Lahens15", "Weger18_Liver_F", "Zhang14_RNAseq_Liver_M", "Atger15_NightFeed", "Yang16A_M", "Yang16B_F", "Koronowski19_F", "Xin21_Liver_NightFeed", "Yang20", "Kinouchi18_Liver", "Mermet18", "Benegiamo18", "Cajan16", "Chaix19_AdLib_HFD", "Chaix19_NightFeed_HFD", "Chen19", "Gaucher19_Chronic_Cntrl", "Greenwell19_NightFeed", "Hirako18", "Quagliarini19_HFD", "Quagliarini19_HFD_WTvsKO", "Wu19", "Yeung17", "Zhang14_RNAseq_Kidney_M", "Castelo-Szekely17", ]
-#studies = ["Lahens15", "Weger18_Liver_M", "Weger18_Liver_F", "Zhang14_RNAseq_Liver_M", "Pan19", "Morton20_Liver", "Atger15_AdLib", "Atger15_NightFeed", "Manella21_Liver", "Yang16A_M", "Yang16B_M", "Yang16B_F", "Guan20_Liver", "Koronowski19_F", "Xin21_Liver_NightFeed", "Yang20", "Kinouchi18_Liver", "Weger20_Bmal1WT", "Weger20_HlfDbpTefWT", "Weger20_CryWT", "Mermet18", "Benegiamo18", "Cajan16", "Chaix19_AdLib_HFD", "Chaix19_NightFeed_HFD", "Chen19", "Du14", "Fader19", "Gaucher19_Chronic_Cntrl", "Greenwell19_AdLib", "Greenwell19_NightFeed", "Hidalgo19", "Hirako18", "Levine20", "Li19_Young", "Li19_Old", "Menet12", "Quagliarini19_NormalDiet", "Quagliarini19_HFD", "Quagliarini19_NormalDiet_WTvsKO", "Quagliarini19_HFD_WTvsKO", "Stubblefield18", "Wu19", "Yeung17", "Zhang14_RNAseq_Kidney_M", "Castelo-Szekely17", ]
+    "Manella21_Liver", "Lahens15", "Weger18_Liver_F", "Zhang14_RNAseq_Liver_M", "Atger15_NightFeed", "Yang16A_M", "Yang16B_F", "Koronowski19_F", "Xin21_Liver_NightFeed", "Yang20", "Kinouchi18_Liver", "Mermet18", "Benegiamo18", "Cajan16", "Chaix19_AdLib_HFD", "Chaix19_NightFeed_HFD", "Chen19", "Gaucher19_Chronic_Cntrl", "Greenwell19_NightFeed", "Hirako18", "Quagliarini19_HFD", "Quagliarini19_HFD_WTvsKO", "Wu19", "Li19_Young", "Li19_Old",
+    # Kidney:
+    "Yeung17", "Zhang14_RNAseq_Kidney_M", "Castelo-Szekely17", "Mermet18_Kidney_NightFeed", "Mermet18_Kidney", "Xin21_Kidney_NightFeed"
+    ]
 
 # List of all tissues being run
 tissues = list(set(targets[study]['tissue'] for study in studies))
