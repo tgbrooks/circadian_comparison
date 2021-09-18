@@ -117,6 +117,18 @@ rule extract_fastq:
         # Note: Refer to https://edwards.sdsu.edu/research/fastq-dump/ for information about using fastq-dump properly
         "fastq-dump --readids --skip-technical --split-files --clip -F -I -O data/{wildcards.study}/fastq/{wildcards.sample} {input}/*/*.sra"
 
+rule trim_adapators:
+    input:
+        "data/{study}/fastq/{sample}/",
+    output:
+        temp(directory("data/{study}/fastq_trimmed/{sample}")),
+    params:
+        args = lambda wildcards: targets[wildcards.study]['trim_adaptor'],
+    message:
+        "Trimming FASTQ for {wildcards.study} {wildcards.sample}"
+    script:
+        "scripts/trim_adaptors.py"
+
 rule generate_salmon_index:
     output:
         directory("index/mouse_k{k}")
@@ -131,7 +143,7 @@ rule generate_salmon_index:
 
 rule run_salmon:
     input:
-        "data/{study}/fastq/{sample}",
+        lambda wildcards: "data/{study}/fastq_trimmed/{sample}" if targets[wildcards.study].get("trim_adaptor", False) else "data/{study}/fastq/{sample}",
         "index/mouse_k31"
     output:
         "data/{study}/salmon/{sample}/quant.genes.sf",
