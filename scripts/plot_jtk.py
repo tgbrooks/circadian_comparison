@@ -13,6 +13,12 @@ from styles import format_study_name
 studies = snakemake.params.studies
 N_studies = len(studies)
 
+jtk_period = snakemake.wildcards.period
+if jtk_period == '':
+    jtk_period = 24
+else:
+    jtk_period = int(jtk_period)
+
 DPI = 300
 N_COLUMNS = 3
 # Q-value cutoff to call significantly rhythmic
@@ -64,6 +70,9 @@ fig.savefig(snakemake.output.breakdowns, dpi=DPI)
 
 # Exclude any studies from plotting if they have little significant at the looser cutoff
 include_studies = [study for study in studies if len(phases['loose'][study]) > 10]
+if len(include_studies) == 0:
+    # none passed threshold, might as well plot all
+    include_studies = studies
 N_studies = len(include_studies)
 N_ROWS = math.ceil(N_studies / N_COLUMNS)
 remove_unplotted = slice(0,0) if N_studies == N_ROWS * N_COLUMNS else slice(-(N_ROWS * N_COLUMNS) + N_studies, None)
@@ -85,14 +94,14 @@ fig.savefig(snakemake.output.periods, dpi=DPI)
 
 # Histogram of phases
 fig, axes = pylab.subplots(figsize=(1+5*N_COLUMNS,0.7+0.7*N_ROWS), nrows=N_ROWS, ncols=N_COLUMNS, sharex=True, squeeze=False)
-bins = numpy.linspace(0,24,25)
+bins = numpy.linspace(0,jtk_period,jtk_period+1)
 for strictness, phases_ in phases.items():
     for ax, study in zip(axes.flatten(), include_studies):
         phase = phases_[study]
         ax.hist(phase, bins=bins, color=color_by_strictness[strictness])
         ax.set_ylabel(format_study_name(study), rotation=0, horizontalalignment="right")
-        ax.set_xlim(0,24)
-        ax.set_xticks(numpy.arange(0,30, 6))
+        ax.set_xlim(0,jtk_period)
+        ax.set_xticks(numpy.arange(0,jtk_period+1, jtk_period//4))
 [ax.set_xlabel("Phase (hrs)") for ax in axes[-1,:]]
 for ax in axes.flatten()[remove_unplotted]:
     ax.remove()

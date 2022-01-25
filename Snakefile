@@ -12,6 +12,7 @@ MEAN_READCOUNT_THRESHOLD = 2
 
 wildcard_constraints:
     sample = "GSM(\d+)",
+    period = ".*", # Allow empty periods, empty means default
 
 rule all:
     input:
@@ -26,11 +27,23 @@ rule all:
                 "qc/percent_mapping.png",
                 "clock_genes/plot_Arntl.png",
                 "jtk/breakdowns.png",
-                "num_common_genes.txt",
+                "jtk24/breakdowns.png",
+                "jtk12/breakdowns.png",
+                "jtk8/breakdowns.png",
+                "jtk/num_common_genes.txt",
+                "jtk24/num_common_genes.txt",
+                "jtk12/num_common_genes.txt",
+                "jtk8/num_common_genes.txt",
+                "common_nonrhythmic_genes.txt",
                 "PCA",
-                "robustness/expression_level_robust.png",
+                "jtk24/robustness/expression_level_robust.png",
+                "jtk12/robustness/expression_level_robust.png",
+                "jtk8/robustness/expression_level_robust.png",
                 "tpm_all_samples.txt",
                 "jtk.results.txt",
+                "jtk24.results.txt",
+                "jtk12.results.txt",
+                "jtk8.results.txt",
                 "amplitude_scatter_grid.png",
                 "consensus_pca/",
                 "outlier_samples.txt",
@@ -242,34 +255,42 @@ rule classify_studies:
     script:
         "scripts/classify_studies.py"
 
-rule run_JTK:
+rule run_jtk:
     input:
         "data/{study}/expression.tpm.txt",
         "data/{study}/expression.num_reads.txt",
         "data/{study}/sample_data.txt"
     output:
-        "data/{study}/jtk/JTKresult_expression.tpm.txt"
+        "data/{study}/jtk{period}/JTKresult_expression.tpm.txt"
     params:
         timepoints = lambda wildcards: sample_timepoints(wildcards.study),
-        out_dir = "data/{study}/jtk/"
+        out_dir = "data/{study}/jtk{period}/",
+        period = lambda wildcards: 'default' if wildcards.period == '' else wildcards.period
     script:
         "scripts/run_jtk.R"
 
-rule process_JTK:
+rule process_jtk:
     input:
-        "data/{study}/jtk/JTKresult_expression.tpm.txt",
+        "data/{study}/jtk{period}/JTKresult_expression.tpm.txt",
         "data/{study}/expression.num_reads.txt",
     output:
-        "data/{study}/jtk.results.txt",
+        "data/{study}/jtk{period}.results.txt",
     run:
         # This generates a JTK output with q-values computed after removing
         # low-expressed genes.
         jtk = pandas.read_csv(input[0], sep="\t", index_col=0)
-        num_reads = pandas.read_csv(input[0], sep="\t", index_col=0).loc[jtk.index]
+        num_reads = pandas.read_csv(input[1], sep="\t", index_col=0).loc[jtk.index]
         selected = num_reads.mean(axis=1) >= MEAN_READCOUNT_THRESHOLD
+        print(num_reads)
+        print(jtk)
         ps = jtk.loc[selected, 'ADJ.P']
         import statsmodels.api as sm
-        _, qs, _, _ = sm.stats.multipletests(ps, method="fdr_bh")
+        print(selected)
+        print(ps)
+        if len(ps) > 0:
+            _, qs, _, _ = sm.stats.multipletests(ps, method="fdr_bh")
+        else:
+            ps = []
         jtk['dropped'] = ~selected# Mark any genes as 'dropped' if they did not pass the cutoff
         jtk['qvalue'] = 1 # Dropped genes get q=1
         jtk.loc[selected, 'qvalue'] = qs
@@ -335,33 +356,46 @@ rule plot_genes:
 
 rule plot_jtk:
     input:
-        jtk = lambda wildcards: expand("data/{study}/jtk.results.txt", study=studies_by_tissue(wildcards.tissue)),
+        jtk = lambda wildcards: expand("data/{study}/jtk{period}.results.txt",
+                                        study=studies_by_tissue(wildcards.tissue),
+                                        period=wildcards.period),
     params:
         studies = select_tissue(studies),
     output:
-        breakdowns = "results/{tissue}/jtk/breakdowns.png",
-        periods = "results/{tissue}/jtk/periods.png",
-        amplitudes = "results/{tissue}/jtk/amplitudes.png",
-        phases = "results/{tissue}/jtk/phases.png",
+        breakdowns = "results/{tissue}/jtk{period}/breakdowns.png",
+        periods = "results/{tissue}/jtk{period}/periods.png",
+        amplitudes = "results/{tissue}/jtk{period}/amplitudes.png",
+        phases = "results/{tissue}/jtk{period}/phases.png",
     script:
         "scripts/plot_jtk.py"
 
 rule plot_overlapped_genes:
+    input:
+        jtk = lambda wildcards: expand("data/{study}/jtk{period}.results.txt", study=studies_by_tissue(wildcards.tissue), period=wildcards.period),
+        tpm = lambda wildcards: expand("data/{study}/expression.tpm.txt", study=studies_by_tissue(wildcards.tissue)),
+    params:
+        studies = select_tissue(studies),
+    output:
+        num_common_genes = "results/{tissue}/jtk{period}/num_common_genes.txt",
+        num_common_genes_heatmap = "results/{tissue}/jtk{period}/num_common_genes_heatmap.png",
+        common_genes_pvalue = "results/{tissue}/jtk{period}/common_genes_pvalue.txt",
+        robustness_score = "results/{tissue}/jtk{period}/robustness_score.txt",
+        heatmap = "results/{tissue}/jtk{period}/common_genes_heatmap.png",
+    resources:
+        mem_mb = 4000
+    script:
+        "scripts/plot_overlapped_genes.py"
+
+rule nonrhythmic_genes:
     input:
         jtk = lambda wildcards: expand("data/{study}/jtk.results.txt", study=studies_by_tissue(wildcards.tissue)),
         tpm = lambda wildcards: expand("data/{study}/expression.tpm.txt", study=studies_by_tissue(wildcards.tissue)),
     params:
         studies = select_tissue(studies),
     output:
-        num_common_genes = "results/{tissue}/num_common_genes.txt",
-        num_common_genes_heatmap = "results/{tissue}/num_common_genes_heatmap.png",
-        common_genes_pvalue = "results/{tissue}/common_genes_pvalue.txt",
-        robustness_score = "results/{tissue}/robustness_score.txt",
-        heatmap = "results/{tissue}/common_genes_heatmap.png",
-    resources:
-        mem_mb = 4000
+        nonrhythmic_genes = "results/{tissue}/common_nonrhythmic_genes.txt",
     script:
-        "scripts/plot_overlapped_genes.py"
+        "scripts/nonrhythmic_genes.py"
 
 rule plot_PCA:
     input:
@@ -369,7 +403,7 @@ rule plot_PCA:
         sample_info = "results/{tissue}/all_samples_info.txt",
         jtk = lambda wildcards: expand("data/{study}/jtk.results.txt", study=studies_by_tissue(wildcards.tissue)),
         outlier_samples = "results/{tissue}/outlier_samples.txt",
-        robustness = "results/{tissue}/robustness_score.txt",
+        robustness = "results/{tissue}/jtk24/robustness_score.txt",
         study_classification = "results/study_classification.json",
     params:
         studies = select_tissue(studies),
@@ -382,16 +416,20 @@ rule plot_PCA:
 
 rule robustness:
     input:
-        robustness = "results/{tissue}/robustness_score.txt",
+        robustness = "results/{tissue}/jtk{period}/robustness_score.txt",
         tpm = lambda wildcards: expand("data/{study}/expression.tpm.txt", study=studies_by_tissue(wildcards.tissue)),
-        jtk = lambda wildcards: expand("data/{study}/jtk.results.txt", study=studies_by_tissue(wildcards.tissue)),
+        jtk = lambda wildcards: expand("data/{study}/jtk{period}.results.txt",
+                                        study=studies_by_tissue(wildcards.tissue),
+                                        period=wildcards.period),
     params:
         studies = select_tissue(studies),
     output:
-        expression_level = "results/{tissue}/robustness/expression_level_robust.png",
-        amplitude = "results/{tissue}/robustness/amplitude_robust.png",
-        period = "results/{tissue}/robustness/period_robust.png",
-        phase = "results/{tissue}/robustness/phase_robust.png",
+        expression_level = "results/{tissue}/jtk{period}/robustness/expression_level_robust.png",
+        amplitude = "results/{tissue}/jtk{period}/robustness/amplitude_robust.png",
+        period = "results/{tissue}/jtk{period}/robustness/period_robust.png",
+        phase = "results/{tissue}/jtk{period}/robustness/phase_robust.png",
+    resources:
+        mem_mb = 4000,
     script:
         "scripts/plot_robustness.py"
 
@@ -431,11 +469,13 @@ rule all_samples:
 
 rule all_jtk: # Gather all JTK results of a tissue together
     input:
-        jtk = lambda wildcards: expand("data/{study}/jtk.results.txt", study=studies_by_tissue(wildcards.tissue)),
+        jtk = lambda wildcards: expand("data/{study}/jtk{period}.results.txt",
+                                        study=studies_by_tissue(wildcards.tissue),
+                                        period=wildcards.period),
     params:
         studies = select_tissue(studies),
     output:
-        all_jtk = "results/{tissue}/jtk.results.txt",
+        all_jtk = "results/{tissue}/jtk{period}.results.txt",
     run:
         jtks = []
         for study, jtk_file in zip(params.studies, input.jtk):
@@ -457,13 +497,13 @@ rule outlier_detection:
 
 rule scatter_grid:
     input:
-        jtk = lambda wildcards: expand("data/{study}/jtk.results.txt", study=studies_by_tissue(wildcards.tissue)),
+        jtk = lambda wildcards: expand("data/{study}/jtk24.results.txt", study=studies_by_tissue(wildcards.tissue)),
     params:
         studies = select_tissue(studies),
     output:
         amplitude = "results/{tissue}/amplitude_scatter_grid.png",
         phase = "results/{tissue}/phase_scatter_grid.png",
-    resources: 
+    resources:
         mem_mb = 12000
     script:
         "scripts/plot_scatter_grid.py"
