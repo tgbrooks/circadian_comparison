@@ -37,7 +37,9 @@ sample_table <- read_tsv(input[['sample_info']], show_col_types=FALSE) %>%
 # We don't use all studies
 # Some have a very different seuqencing methodoloy or bad alignment stats
 drop_studies <- c("Greenwell19_AdLib", "Greenwell19_NightFeed", "Janich15", "Manella21_Liver")
-selected_samples <- (sample_table %>% filter(!(study %in% drop_studies)))
+# and some samples are outliers to be dropped
+drop_samples <- read.csv2(input[['outliers']], header=FALSE)$V1
+selected_samples <- (sample_table %>% filter(!(study %in% drop_studies)) %>% filter(!(sample %in% drop_samples)))
 
 # Find genes passing an expression cutoff
 # require at least 33% of samples to have non-zero measurements

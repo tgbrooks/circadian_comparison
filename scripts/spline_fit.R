@@ -34,7 +34,8 @@ fit_splines <- function(values, groups, times) {
                start=c(mesor_guess),
                spar="m",
                control=list(
-                    converg="PRSS",
+                    converg="PRSS", # Convergence mode - check fit values not coefficients for convergence
+                    prec.out=0.05, # Convergence criterion - default is very overstrict for PRSS
                     rkpk.control=list(
                         limnla=c(-5,3) #Min and max values for lambda
                                        # In my experience, too low values are no good

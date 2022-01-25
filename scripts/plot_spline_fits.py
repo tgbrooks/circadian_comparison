@@ -1,4 +1,5 @@
 import pathlib
+import math
 import pandas
 import numpy
 import scipy.interpolate
@@ -6,10 +7,15 @@ import statsmodels.multivariate.pca
 import sklearn.manifold
 import pylab
 
+import styles
+
 DPI = 300
 
-# Load information
-#tpm = pandas.read_csv(snakemake.input.tpm, sep="\t", index_col=0).drop(columns=["Symbol"])
+# Load original information
+tpm = pandas.read_csv(snakemake.input.tpm, sep="\t", index_col=0).drop(columns=["Symbol"])
+sample_info = pandas.read_csv(snakemake.input.sample_info, sep="\t", index_col=0)
+outlier_samples = [x.strip() for x in open(snakemake.input.outliers).readlines()]
+sample_info = sample_info[~sample_info.index.isin(outlier_samples)]
 
 # Load spline fits
 summary = pandas.read_csv(snakemake.input.summary, sep="\t", index_col=0)
@@ -29,33 +35,66 @@ print(f"Using {use.sum()} out of {len(use)} genes.")
 ## Plot the gene fits for core clock genes
 def alogit(x):
     return numpy.exp(x) / (numpy.exp(x) + 1)
-genes = ["ENSMUSG00000055116", "ENSMUSG00000020038", "ENSMUSG00000068742", "ENSMUSG00000020893", "ENSMUSG00000055866", "ENSMUSG00000028957", "ENSMUSG00000020889", "ENSMUSG00000021775", "ENSMUSG00000059824", "ENSMUSG00000029238"]
-names= ["Arntl", "Cry1", "Cry2", "Per1", "Per2", "Per3", "Nr1d1", "Nr1d2", "Dbp", "Clock"]
+genes = ["ENSMUSG00000055116", "ENSMUSG00000020038", "ENSMUSG00000068742", "ENSMUSG00000020893", "ENSMUSG00000055866", "ENSMUSG00000028957", "ENSMUSG00000020889", "ENSMUSG00000021775", "ENSMUSG00000059824", "ENSMUSG00000029238", "ENSMUSG00000057342", "ENSMUSG00000016619"]
+names= ["Arntl", "Cry1", "Cry2", "Per1", "Per2", "Per3", "Nr1d1", "Nr1d2", "Dbp", "Clock", "Sphk2", "Nup50"]
 re_by_studygene = re.reset_index().set_index(['gene', 'study'])
-studies = re.study.unique()
+re_studies = re.study.unique()
+studies = [study for study in styles.studies if study in re_studies] # Get order of studies consistent
 pathlib.Path(snakemake.output.gene_plot_dir).mkdir(exist_ok=True)
 for gene, name in zip(genes, names):
     if gene not in summary.index:
         print(f"Gene {gene} | {name} has no spline fit.")
         continue
-    fig, ax = pylab.subplots(figsize=(6,3))
 
     u = curves.loc[gene].index.astype(float)
-    value = curves.loc[gene] + summary.loc[gene].fit_mesor
+    value = curves.loc[gene]
 
-    # Plot each fit curve for each study
-    for study in studies:
+    #fig, ax = pylab.subplots(figsize=(6,3))
+    ## Plot each fit curve for each study
+    #for study in studies:
+    #    logAmp, phi, mesor = re_by_studygene.loc[(gene, study)]
+    #    study_u = ((u + (alogit(phi) - 0.5)) % 1)
+    #    study_values = numpy.exp(logAmp)*value + mesor
+    #    order = numpy.argsort(study_u)
+    #    ax.plot( (study_u*24)[order], numpy.exp(study_values[order]), color='gray', linewidth=0.5)
+    ## Plot the overall fit
+    #ax.plot(u*24, numpy.exp(value), color='k')
+    #ax.set_title(f"{gene} | {name}")
+    #fig.savefig(snakemake.output.gene_plot_dir+f"/{gene}.png", dpi=DPI)
+    #pylab.close(fig)
+
+    # Plot the original data aligned by the fit phase/amplitude
+    # and with the overall fit ontop
+    ncols = 7
+    nrows = math.ceil(len(studies) / ncols)
+    fig, axes = pylab.subplots(figsize=(12,10), nrows=nrows, ncols=ncols, sharex=True, sharey=True)
+    for study, ax in zip(studies, axes.flatten()):
         logAmp, phi, mesor = re_by_studygene.loc[(gene, study)]
+        print(gene, study, mesor)
         study_u = ((u + (alogit(phi) - 0.5)) % 1)
-        study_values = numpy.exp(logAmp)*value + mesor
+        study_values = numpy.exp(logAmp)*value + mesor + summary.loc[gene].fit_mesor
         order = numpy.argsort(study_u)
-        ax.plot( (study_u*24)[order], numpy.exp(study_values[order]), color='gray', linewidth=0.5)
-
-    # Plot the overall fit
-    ax.plot(u*24, numpy.exp(value), color='k')
-
-    ax.set_title(f"{gene} | {name}")
-    fig.savefig(snakemake.output.gene_plot_dir+f"/{gene}.png", dpi=DPI)
+        study_samples = sample_info.index[sample_info.study == study]
+        study_tpm = tpm.loc[gene, study_samples]
+        times = sample_info.loc[study_samples].time
+        # Align according to the phase + amplitude
+        #aligned_u = (times % 24) / 24
+        #aligned_u = ((aligned_u - (alogit(phi) - 0.5)) % 1)
+        #aligned = (numpy.log(study_tpm+0.01) - mesor)/numpy.exp(logAmp)
+        #ax.scatter(aligned_u*24, (aligned), marker='+', label="Aligned data")
+        #ax.plot(u*24, (value), color='k', label="Fit curve") # Overall plot
+        # Plot raw data and the study-specific spline fit
+        ax.scatter(times%24, numpy.log(study_tpm+0.01), marker='+', color='r', label="Raw data")
+        ax.plot((study_u * 24)[order], study_values[order], color='k', label='Study fit')
+        ax.set_title(styles.format_study_name(study))
+    for ax in axes[:,0]:
+        ax.set_ylabel("log TPM")
+    for ax in axes[-1,:]:
+        ax.set_xlabel("Time")
+    fig.suptitle(f"{gene} | {name}")
+    fig.tight_layout()
+    fig.savefig(snakemake.output.gene_plot_dir+f"/{gene}.by_study.png", dpi=DPI)
+    pylab.close(fig)
 
 # Plot the phase distributions
 fig, axes = pylab.subplots(figsize=(5,5,), nrows=2, sharex=True, sharey=True)
@@ -68,6 +107,7 @@ axes[1].set_xlabel("Time (hours)")
 axes[1].set_xticks(numpy.linspace(0,24,5))
 fig.tight_layout()
 fig.savefig(snakemake.output.phase_distribution, dpi=DPI)
+pylab.close(fig)
 
 # Plot correlation of trough and peak time
 fig, ax = pylab.subplots()
@@ -84,6 +124,7 @@ ax.set_ylabel("Trough Time (hrs)")
 ax.set_xticks(numpy.linspace(0,24,5))
 ax.set_yticks(numpy.linspace(0,24,5))
 fig.savefig(snakemake.output.phase_correlation, dpi=DPI)
+pylab.close(fig)
 
 # Align the curves by their peak time
 # So all peaks will occur at time u=0.5 (out of the range [0,1])

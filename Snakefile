@@ -51,8 +51,9 @@ rule all:
             ]
         ),
         # NOTE: big computation, ~500 hours of CPU time
-        "results/Liver/spline_fit/summary.txt",
+        #"results/Liver/spline_fit/summary.txt",
         "results/Liver/spline_fit/tsne.png",
+        "results/Liver/spline_fit/stats/",
 
 rule get_series_matrix:
     output:
@@ -515,6 +516,8 @@ rule plot_consensus_pca:
         outliers = "results/{tissue}/outlier_samples.txt",
     output:
         outdir = directory("results/{tissue}/consensus_pca/")
+    resources:
+        mem_mb = 4000
     script:
         "scripts/consensus_pca.py"
 
@@ -522,6 +525,7 @@ rule run_spline_fit:
     input:
         tpm = "results/{tissue}/tpm_all_samples.txt",
         sample_info = "results/{tissue}/all_samples_info.txt",
+        outliers = "results/{tissue}/outlier_samples.txt",
     output:
         summary = "results/{tissue}/spline_fit/batches/{batch}.summary.txt",
         curves_fit = "results/{tissue}/spline_fit/batches/{batch}.curves_fit.txt",
@@ -560,10 +564,24 @@ rule gather_spline_fits:
     script:
         "scripts/gather_spline_fits.py"
 
+rule assess_spline_fits:
+    input:
+        summary = "results/{tissue}/spline_fit/summary.txt",
+        curves_fit = "results/{tissue}/spline_fit/curves_fit.txt",
+        curves_pstd = "results/{tissue}/spline_fit/curves_pstd.txt",
+        re = "results/{tissue}/spline_fit/re.txt",
+        re_structure = "results/{tissue}/spline_fit/re_structure.txt",
+    output:
+        directory("results/{tissue}/spline_fit/stats/")
+    script:
+        "scripts/assess_spline_fits.py"
+
 rule plot_spline_fits:
     input:
         tpm = "results/{tissue}/tpm_all_samples.txt",
+        sample_info = "results/{tissue}/all_samples_info.txt",
         summary = "results/{tissue}/spline_fit/summary.txt",
+        outliers = "results/{tissue}/outlier_samples.txt",
         curves_fit = "results/{tissue}/spline_fit/curves_fit.txt",
         curves_pstd = "results/{tissue}/spline_fit/curves_pstd.txt",
     output:
@@ -584,3 +602,4 @@ rule assess_period_differences:
         "results/{tissue}/assess_jtk/period_statistics.txt",
     script:
         "scripts/assess_period_differences.py"
+
