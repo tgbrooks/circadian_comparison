@@ -15,6 +15,9 @@ DPI = 300
 # fit curves to be elevated above the mean
 T_STAT_ELEVATED_CUTOFF = 2
 
+out_dir = pathlib.Path(snakemake.output[0])
+out_dir.mkdir(exist_ok=True)
+
 # Load original information
 tpm = pandas.read_csv(snakemake.input.tpm, sep="\t", index_col=0).drop(columns=["Symbol"])
 sample_info = pandas.read_csv(snakemake.input.sample_info, sep="\t", index_col=0)
@@ -25,8 +28,8 @@ sample_info = sample_info[~sample_info.index.isin(outlier_samples)]
 summary = pandas.read_csv(snakemake.input.summary, sep="\t", index_col=0)
 curves = pandas.read_csv(snakemake.input.curves_fit, sep="\t", index_col=0)
 curves_pstd = pandas.read_csv(snakemake.input.curves_pstd, sep="\t", index_col=0)
-re = pandas.read_csv("results/Liver/spline_fit/re.txt", sep="\t", index_col=0) # random effects
-re_structure = pandas.read_csv("results/Liver/spline_fit/re_structure.txt", sep="\t", index_col=0)
+re = pandas.read_csv(snakemake.input.re, sep="\t", index_col=0) # random effects
+re_structure = pandas.read_csv(snakemake.input.re_structure, sep="\t", index_col=0)
 
 #num_zeros = (tpm == 0).sum(axis=1)
 summary['median_t'] =  (curves.abs()/curves_pstd).median(axis=1)
@@ -98,7 +101,7 @@ def calc_goodness_of_fit(curves, tpm):
             study_tpm = tpm[study_samples].loc[gene]
             study_u = (sample_info.loc[study_samples].time / 24 - (alogit(phi) - 0.5))
             study_values = numpy.log(study_tpm+0.01)
-            fit_values = numpy.exp(logAmp)*np.interp(study_u, u, value, period=1) + mesor + summary.loc[gene].fit_mesor
+            fit_values = numpy.exp(logAmp)*numpy.interp(study_u, u, value, period=1) + mesor + summary.loc[gene].fit_mesor
             resid = (study_values - fit_values)
             res.append({
                 "gene": gene,

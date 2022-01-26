@@ -12,6 +12,13 @@ input <- snakemake@input
 output <- snakemake@output
 num_batches <- snakemake@params[['num_batches']]
 batch <- as.integer(snakemake@wildcards[['batch']])
+# Find out whether we need to randomly permute the data
+# and if so, which seed to sue
+permutation <- snakemake@wildcards[['permutation']]
+if (permutation != '') {
+    seed_num <- as.integer(sub('_perm/', '', permutation))
+    set.seed(seed_num + 1_000_000*batch)
+}
 
 #input <- list(
 #    tpm = "results/Liver/tpm_all_samples.txt",
@@ -56,6 +63,11 @@ lst <- batch_size * (batch+1)
 selected_genes <-  (selected_data_table %>% slice(fst:lst))$Name
 #selected_genes <- c("ENSMUSG00000055866")# XXX TODO USE BATCHES
 
+# Randomly permute a vector
+permuted <- function(data) {
+    sample(data, length(data), replace=FALSE)
+}
+
 
 times <- selected_samples$time
 study <- selected_samples$study
@@ -68,10 +80,20 @@ for(gene in selected_genes) {
     gene_values <- data_table %>%
         filter(Name == gene) %>%
         select(selected_samples$sample)
+    # Log-scale values to fit
+    vals <- log(t(gene_values)+PSEUDOCOUNT)
+    gene_data <- tibble(
+        val = vals,
+        study = study,
+        time = times
+    )
+    if (permutation != '') {
+        gene_data <- gene_data %>% group_by(study) %>% mutate(time = permuted(time))
+    }
 
     # Fit the spline to that gene
     tryCatch({
-        res <- fit_splines(log(t(gene_values)+PSEUDOCOUNT), study, times)
+        res <- fit_splines(gene_data$val, gene_data$study, gene_data$time)
 
         if (is.null(summary)) {
             # If first iteration, must generate the tables we store these in

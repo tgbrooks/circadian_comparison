@@ -13,6 +13,7 @@ MEAN_READCOUNT_THRESHOLD = 2
 wildcard_constraints:
     sample = "GSM(\d+)",
     period = ".*", # Allow empty periods, empty means default
+    permutation = r"(_perm/[0-9]+|)", # Permutation '' means no permutation, else a number
 
 rule all:
     input:
@@ -52,8 +53,11 @@ rule all:
         ),
         # NOTE: big computation, ~500 hours of CPU time
         #"results/Liver/spline_fit/summary.txt",
-        "results/Liver/spline_fit/tsne.png",
-        "results/Liver/spline_fit/stats/",
+        #"results/Liver/spline_fit_perm/1/batches/1.summary.txt",
+        #"results/Liver/spline_fit/tsne.png",
+        #"results/Liver/spline_fit/stats/",
+        "results/Liver/spline_fit_perm/1/summary.txt",
+        "results/Liver/spline_fit_perm/1/stats/",
 
 rule get_series_matrix:
     output:
@@ -527,13 +531,14 @@ rule run_spline_fit:
         sample_info = "results/{tissue}/all_samples_info.txt",
         outliers = "results/{tissue}/outlier_samples.txt",
     output:
-        summary = "results/{tissue}/spline_fit/batches/{batch}.summary.txt",
-        curves_fit = "results/{tissue}/spline_fit/batches/{batch}.curves_fit.txt",
-        curves_pstd = "results/{tissue}/spline_fit/batches/{batch}.curves_pstd.txt",
-        re = "results/{tissue}/spline_fit/batches/{batch}.re.txt",
-        re_structure = "results/{tissue}/spline_fit/batches/{batch}.re_structure.txt",
+        summary = "results/{tissue}/spline_fit{permutation}/batches/{batch}.summary.txt",
+        curves_fit = "results/{tissue}/spline_fit{permutation}/batches/{batch}.curves_fit.txt",
+        curves_pstd = "results/{tissue}/spline_fit{permutation}/batches/{batch}.curves_pstd.txt",
+        re = "results/{tissue}/spline_fit{permutation}/batches/{batch}.re.txt",
+        re_structure = "results/{tissue}/spline_fit{permutation}/batches/{batch}.re_structure.txt",
+        #Note: permutation == '' is  no-permutation
     params:
-        num_batches = SPLINE_FIT_N_BATCHES
+        num_batches = SPLINE_FIT_N_BATCHES,
     resources:
         mem_mb = 4000
     script:
@@ -541,38 +546,43 @@ rule run_spline_fit:
 
 rule gather_spline_fits:
     input:
-        summary = expand("results/{{tissue}}/spline_fit/batches/{batch}.summary.txt",
+        summary = expand("results/{{tissue}}/spline_fit{{permutation}}/batches/{batch}.summary.txt",
                             batch=range(SPLINE_FIT_N_BATCHES)),
-        curves_fit = expand("results/{{tissue}}/spline_fit/batches/{batch}.curves_fit.txt",
+        curves_fit = expand("results/{{tissue}}/spline_fit{{permutation}}/batches/{batch}.curves_fit.txt",
                             batch=range(SPLINE_FIT_N_BATCHES)),
-        curves_pstd = expand("results/{{tissue}}/spline_fit/batches/{batch}.curves_pstd.txt",
+        curves_pstd = expand("results/{{tissue}}/spline_fit{{permutation}}/batches/{batch}.curves_pstd.txt",
                             batch=range(SPLINE_FIT_N_BATCHES)),
-        re = expand("results/{{tissue}}/spline_fit/batches/{batch}.re.txt",
+        re = expand("results/{{tissue}}/spline_fit{{permutation}}/batches/{batch}.re.txt",
                             batch=range(SPLINE_FIT_N_BATCHES)),
-        re_structure = expand("results/{{tissue}}/spline_fit/batches/{batch}.re_structure.txt",
+        re_structure = expand("results/{{tissue}}/spline_fit{{permutation}}/batches/{batch}.re_structure.txt",
                             batch=range(SPLINE_FIT_N_BATCHES)),
     output:
-        summary = "results/{tissue}/spline_fit/summary.txt",
-        curves_fit = "results/{tissue}/spline_fit/curves_fit.txt",
-        curves_pstd = "results/{tissue}/spline_fit/curves_pstd.txt",
-        re = "results/{tissue}/spline_fit/re.txt",
-        re_structure = "results/{tissue}/spline_fit/re_structure.txt",
+        summary = "results/{tissue}/spline_fit{permutation}/summary.txt",
+        curves_fit = "results/{tissue}/spline_fit{permutation}/curves_fit.txt",
+        curves_pstd = "results/{tissue}/spline_fit{permutation}/curves_pstd.txt",
+        re = "results/{tissue}/spline_fit{permutation}/re.txt",
+        re_structure = "results/{tissue}/spline_fit{permutation}/re_structure.txt",
     params:
-        num_batches = SPLINE_FIT_N_BATCHES
+        num_batches = SPLINE_FIT_N_BATCHES,
+        input_dir = "results/{tissue}/spline_fit{permutation}/batches/",
+        output_dir = "results/{tissue}/spline_fit{permutation}/",
     resources:
-        mem_mb = 4000
+        mem_mb = 6_000
     script:
         "scripts/gather_spline_fits.py"
 
 rule assess_spline_fits:
     input:
-        summary = "results/{tissue}/spline_fit/summary.txt",
-        curves_fit = "results/{tissue}/spline_fit/curves_fit.txt",
-        curves_pstd = "results/{tissue}/spline_fit/curves_pstd.txt",
-        re = "results/{tissue}/spline_fit/re.txt",
-        re_structure = "results/{tissue}/spline_fit/re_structure.txt",
+        tpm = "results/{tissue}/tpm_all_samples.txt",
+        sample_info = "results/{tissue}/all_samples_info.txt",
+        outliers = "results/{tissue}/outlier_samples.txt",
+        summary = "results/{tissue}/spline_fit{permutation}/summary.txt",
+        curves_fit = "results/{tissue}/spline_fit{permutation}/curves_fit.txt",
+        curves_pstd = "results/{tissue}/spline_fit{permutation}/curves_pstd.txt",
+        re = "results/{tissue}/spline_fit{permutation}/re.txt",
+        re_structure = "results/{tissue}/spline_fit{permutation}/re_structure.txt",
     output:
-        directory("results/{tissue}/spline_fit/stats/")
+        directory("results/{tissue}/spline_fit{permutation}/stats/")
     script:
         "scripts/assess_spline_fits.py"
 
@@ -590,6 +600,8 @@ rule plot_spline_fits:
         phase_distribution = "results/{tissue}/spline_fit/phase_distribution.png",
         phase_correlation = "results/{tissue}/spline_fit/phase_correlation.png",
         gene_plot_dir = directory("results/{tissue}/spline_fit/gene_plots/"),
+    resources:
+        mem_mb = 4_000,
     script:
         "scripts/plot_spline_fits.py"
 
