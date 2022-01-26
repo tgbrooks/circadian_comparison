@@ -37,7 +37,7 @@ fit_splines <- function(values, groups, times) {
                     converg="PRSS", # Convergence mode - check fit values not coefficients for convergence
                     prec.out=0.05, # Convergence criterion - default is very overstrict for PRSS
                     rkpk.control=list(
-                        limnla=c(-5,3) #Min and max values for lambda
+                        limnla=c(-4,3) #Min and max values for lambda
                                        # In my experience, too low values are no good
                                        # (i.e. overfits). Default is c(-10,3)
                     )
