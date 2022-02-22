@@ -2,12 +2,25 @@ import pathlib
 import math
 import pandas
 import numpy
+import seaborn as sns
 import scipy.interpolate
 import statsmodels.multivariate.pca
 import sklearn.manifold
 import pylab
+import matplotlib
 
 import styles
+
+def legend_from_colormap(fig, colormap, names=None, **kwargs):
+    if names is None:
+        names = {cat:cat for cat in colormap.keys()}
+    legend_elts = [matplotlib.lines.Line2D(
+                            [0],[0],
+                            marker="o", markerfacecolor=c, markersize=10,
+                            label=names[cat] if not pandas.isna(cat) else "NA",
+                            c=c, lw=0)
+                        for cat, c in colormap.items()]
+    fig.legend(handles=legend_elts, **kwargs)
 
 DPI = 300
 
@@ -24,13 +37,34 @@ curves_pstd = pandas.read_csv(snakemake.input.curves_pstd, sep="\t", index_col=0
 re = pandas.read_csv("results/Liver/spline_fit/re.txt", sep="\t", index_col=0) # random effects
 re_structure = pandas.read_csv("results/Liver/spline_fit/re_structure.txt", sep="\t", index_col=0)
 
+
+num_peaks = pandas.read_csv(snakemake.input.num_peaks, sep="\t", index_col=0)['0']
+asymmetric = pandas.read_csv(snakemake.input.asymmetric, sep="\t", index_col=0)['0']
+goodness_of_fit = pandas.read_csv(snakemake.input.goodness_of_fit, sep="\t")
+rsquared = goodness_of_fit.groupby("gene").Rsquared2.median()
+summary['rsquared'] = rsquared
+
 #num_zeros = (tpm == 0).sum(axis=1)
 summary['median_t'] =  (curves.abs()/curves_pstd).median(axis=1)
 summary['rel_amp'] = summary['fit_amplitude'] / summary['sigma']
 
 # Select genes to use
-use = (summary.re_logAmp_sd < 3) & (summary.funcDf < 15) & (summary.median_t > 2) & (summary.iteration_times < 31)
+use = (summary.re_logAmp_sd < 3) & (summary.funcDf < 15) & (summary.median_t > 2) & (summary.iteration_times < 31) & (summary.rsquared > 0.25)
 print(f"Using {use.sum()} out of {len(use)} genes.")
+
+## Determine 3 categories of significant genes
+# 1. Monomodal, symmetric
+# 2. Monomodal, asymmetric
+# 3. Multimodal
+summary['category'] = 'symmetric'
+summary.loc[asymmetric, 'category'] = 'asymmetric'
+summary.loc[num_peaks > 1, 'category'] = 'multimodal'
+print(f"Number of rhythmic genes by category:\n{summary[use].category.value_counts()}")
+color_by_category = {
+        "symmetric": "g",
+        "asymmetric": "b",
+        "multimodal": "r",
+}
 
 ## Plot the gene fits for core clock genes
 def alogit(x):
@@ -70,7 +104,6 @@ for gene, name in zip(genes, names):
     fig, axes = pylab.subplots(figsize=(12,10), nrows=nrows, ncols=ncols, sharex=True, sharey=True)
     for study, ax in zip(studies, axes.flatten()):
         logAmp, phi, mesor = re_by_studygene.loc[(gene, study)]
-        print(gene, study, mesor)
         study_u = ((u + (alogit(phi) - 0.5)) % 1)
         study_values = numpy.exp(logAmp)*value + mesor + summary.loc[gene].fit_mesor
         order = numpy.argsort(study_u)
@@ -110,21 +143,15 @@ fig.savefig(snakemake.output.phase_distribution, dpi=DPI)
 pylab.close(fig)
 
 # Plot correlation of trough and peak time
-fig, ax = pylab.subplots()
-ax.scatter(
-        summary[use].fit_peak_time + 0.1*numpy.random.normal(size=len(summary[use])),
-        summary[use].fit_trough_time + 0.1*numpy.random.normal(size=len(summary[use])),
-        s=1)
-ax.plot([0,12],[12,24], c='k', linewidth=1, zorder=-1)
-ax.plot([12,24],[0,12], c='k', linewidth=1, zorder=-1)
-ax.set_xlim(0,24)
-ax.set_ylim(0,24)
-ax.set_xlabel("Peak Time (hrs)")
-ax.set_ylabel("Trough Time (hrs)")
-ax.set_xticks(numpy.linspace(0,24,5))
-ax.set_yticks(numpy.linspace(0,24,5))
-fig.savefig(snakemake.output.phase_correlation, dpi=DPI)
-pylab.close(fig)
+joint = sns.jointplot(x="fit_peak_time", y="fit_trough_time", data=summary.loc[use], kind="hex")
+joint.ax_joint.plot([0,12],[12,24], c='k', linewidth=1)
+joint.ax_joint.plot([12,24],[0,12], c='k', linewidth=1)
+joint.ax_joint.set_xlabel("Acrophase (hrs)")
+joint.ax_joint.set_ylabel("Bathyphase (hrs)")
+joint.ax_joint.set_xticks(numpy.linspace(0,24,5))
+joint.ax_joint.set_yticks(numpy.linspace(0,24,5))
+joint.figure.savefig(snakemake.output.phase_correlation, dpi=DPI)
+pylab.close(joint.figure)
 
 # Align the curves by their peak time
 # So all peaks will occur at time u=0.5 (out of the range [0,1])
@@ -175,11 +202,13 @@ cmin, cmax = scale(summary.loc[use, colorby].min()), scale(summary.loc[use, colo
 for gene, curve in curves_normalized.sample(300).iterrows():
     h = ax.plot(
              xscale * (curve.index - 0.5) + pca.scores.loc[gene, 'comp_0'],
-             yscale * numpy.exp(curve.values) + pca.scores.loc[gene, 'comp_1'],
-             c=colormap((scale(summary.loc[gene, colorby]) - cmin) / (cmax - cmin)),
+             yscale * curve.values + pca.scores.loc[gene, 'comp_1'],
+             #c=colormap((scale(summary.loc[gene, colorby]) - cmin) / (cmax - cmin)),
+             c = color_by_category[summary.loc[gene, 'category']],
              linewidth=0.5)
 ax.set_axis_off()
 ax.set_title("PCA of Curve Fits")
+legend_from_colormap(fig, color_by_category)
 #fig.colorbar(h)
 fig.savefig(snakemake.output.pca, dpi=300)
 
@@ -199,20 +228,12 @@ cmin, cmax = scale(summary.loc[use, colorby].min()), scale(summary.loc[use, colo
 for gene, curve in curves_normalized.sample(300).iterrows():
     h = ax.plot(
              xscale * (curve.index - 0.5) + tsne.loc[gene, 'comp_0'],
-             yscale * numpy.exp(curve.values) + tsne.loc[gene, 'comp_1'],
-             c=colormap((scale(summary.loc[gene, colorby]) - cmin) / (cmax - cmin)),
+             yscale * (curve.values) + tsne.loc[gene, 'comp_1'],
+             #c=colormap((scale(summary.loc[gene, colorby]) - cmin) / (cmax - cmin)),
+             c = color_by_category[summary.loc[gene, 'category']],
              linewidth=0.5)
 ax.set_axis_off()
 ax.set_title("t-SNE of Curve Fits")
 fig.tight_layout()
 #fig.colorbar(h)
 fig.savefig(snakemake.output.tsne, dpi=300)
-
-
-## Just plot the curves ontop of eachother
-# maybe not so useful
-#fig, ax = pylab.subplots(figsize=(3,20))
-#for idx, (gene, curve) in enumerate(curves_normalized.sample(500).iterrows()):
-#    ax.plot( curve.index, idx + curve.values, c='k', linewidth=0.5)
-#fig.savefig("results/Liver/spline_fit/curves.png", dpi=300)
-

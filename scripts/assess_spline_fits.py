@@ -35,18 +35,36 @@ re_structure = pandas.read_csv(snakemake.input.re_structure, sep="\t", index_col
 summary['median_t'] =  (curves.abs()/curves_pstd).median(axis=1)
 summary['rel_amp'] = summary['fit_amplitude'] / summary['sigma']
 
-# Select genes to use
-use = (summary.re_logAmp_sd < 3) & (summary.funcDf < 15) & (summary.median_t > 2) & (summary.iteration_times < 31)
-print(f"Using {use.sum()} out of {len(use)} genes.")
-
-
 # Setup
 re_by_studygene = re.reset_index().set_index(['gene', 'study'])
 re_studies = re.study.unique()
 studies = [study for study in styles.studies if study in re_studies] # Get order of studies consistent
 
+
 def alogit(x):
     return numpy.exp(x) / (numpy.exp(x) + 1)
+
+def all_wraps(x):
+    # Given a 1-d array, return a 2-d array
+    # which contains all the cylcic permutations
+    # of the array
+    wrapped =  numpy.lib.stride_tricks.sliding_window_view(numpy.concatenate([x,x]), len(x))
+    return wrapped[:-1,:] # Last is the same as the first, so drop it
+#### Classify shapes as symmetric or non-symmetric
+def is_asymmetric(curve, curve_pstd):
+    # Compare the curve to all mirrored versions of it
+    all_mirrors_curve = all_wraps(curve[::-1])
+    all_mirrors_pstd = all_wraps(curve_pstd[::-1])
+    diffs = curve - all_mirrors_curve
+    tstats = numpy.abs(diffs) / numpy.sqrt(curve_pstd * all_mirrors_pstd)
+    biggest_difference = numpy.min(numpy.max(tstats, axis=1), axis=0)
+    return biggest_difference > T_STAT_ELEVATED_CUTOFF
+asymmetric = pandas.Series({
+    gene:is_asymmetric(curves.loc[gene].values, curves_pstd.loc[gene].values)
+        for gene in curves.index
+})
+asymmetric.to_csv(out_dir / "asymmetric.txt", sep="\t")
+    
 
 #### Try to classify the curves into different categories
 # First: multi-modal or mono-modal

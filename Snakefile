@@ -54,8 +54,8 @@ rule all:
         # NOTE: big computation, ~500 hours of CPU time
         #"results/Liver/spline_fit/summary.txt",
         #"results/Liver/spline_fit_perm/1/batches/1.summary.txt",
-        #"results/Liver/spline_fit/tsne.png",
-        #"results/Liver/spline_fit/stats/",
+        "results/Liver/spline_fit/tsne.png",
+        "results/Liver/spline_fit/stats/",
         "results/Liver/spline_fit_perm/1/summary.txt",
         "results/Liver/spline_fit_perm/1/stats/",
 
@@ -595,6 +595,9 @@ rule plot_spline_fits:
         outliers = "results/{tissue}/outlier_samples.txt",
         curves_fit = "results/{tissue}/spline_fit/curves_fit.txt",
         curves_pstd = "results/{tissue}/spline_fit/curves_pstd.txt",
+        num_peaks = "results/{tissue}/spline_fit/stats/num_peaks.txt",
+        goodness_of_fit  = "results/{tissue}/spline_fit/stats/goodness_of_fit.txt",
+        asymmetric = "results/{tissue}/spline_fit/stats/asymmetric.txt",
     output:
         pca = "results/{tissue}/spline_fit/pca.png",
         tsne = "results/{tissue}/spline_fit/tsne.png",

@@ -17,7 +17,7 @@ batch <- as.integer(snakemake@wildcards[['batch']])
 permutation <- snakemake@wildcards[['permutation']]
 if (permutation != '') {
     seed_num <- as.integer(sub('_perm/', '', permutation))
-    set.seed(seed_num + 1_000_000*batch)
+    set.seed(seed_num + 1000000*batch)
 }
 
 #input <- list(
