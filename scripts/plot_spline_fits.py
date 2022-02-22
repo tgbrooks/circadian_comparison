@@ -235,5 +235,6 @@ for gene, curve in curves_normalized.sample(300).iterrows():
 ax.set_axis_off()
 ax.set_title("t-SNE of Curve Fits")
 fig.tight_layout()
+legend_from_colormap(fig, color_by_category)
 #fig.colorbar(h)
 fig.savefig(snakemake.output.tsne, dpi=300)
