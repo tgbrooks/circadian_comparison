@@ -419,7 +419,7 @@ rule plot_PCA:
     script:
         "scripts/plot_PCA.py"
 
-rule robustness:
+rule plot_robustness:
     input:
         robustness = "results/{tissue}/jtk{period}/robustness_score.txt",
         tpm = lambda wildcards: expand("data/{study}/expression.tpm.txt", study=studies_by_tissue(wildcards.tissue)),
@@ -433,6 +433,7 @@ rule robustness:
         amplitude = "results/{tissue}/jtk{period}/robustness/amplitude_robust.png",
         period = "results/{tissue}/jtk{period}/robustness/period_robust.png",
         phase = "results/{tissue}/jtk{period}/robustness/phase_robust.png",
+        histogram = "results/{tissue}/jtk{period}/robustness/histogram.png",
     resources:
         mem_mb = 4000,
     script:

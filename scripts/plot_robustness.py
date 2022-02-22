@@ -50,6 +50,15 @@ robustness_cat = pandas.cut(
     include_lowest=True,
 )
 
+# Robustness score histogram
+fig, ax = pylab.subplots(figsize=(4,4))
+ax.hist(robustness_score)
+ax.set_xlabel("Robustness Score")
+ax.set_ylabel("Num. Genes")
+fig.tight_layout()
+fig.savefig(snakemake.output.histogram, dpi=DPI)
+
+
 # Robustness score versus expression level (TPM)
 fig, ax = pylab.subplots(figsize=(4,4))
 ax.scatter(
