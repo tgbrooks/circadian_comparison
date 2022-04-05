@@ -15,6 +15,7 @@ import scipy.sparse.linalg
 import pylab
 
 from styles import format_study_name
+import seaborn as sns
 
 tissue = snakemake.wildcards.tissue
 #tissue = "Liver"
@@ -34,7 +35,7 @@ print(f"Dropping {len(outlier_samples)} outlier samples")
 data = data.drop(columns=outlier_samples)
 sample_info = sample_info.drop(index=outlier_samples)
 
-robustness = pandas.read_csv(f"results/{tissue}/robustness_score.txt", sep="\t", index_col=0)
+robustness = pandas.read_csv(f"results/{tissue}/jtk24/robustness_score.txt", sep="\t", index_col=0)
 assert (robustness.index == data.index.get_level_values(0)).all()
 
 #robust_genes = robustness >= 0# (sample_info.study.nunique()) * 0.5
@@ -129,16 +130,20 @@ nstudies = sample_info.study.nunique()
 ncols = 8
 nrows = math.ceil(nstudies / ncols)
 remove_unplotted = slice(0,0) if nstudies == ncols * nrows else slice(-(nrows* ncols) + nstudies, None)
+cbar_frac = 0.10
+figsize=((1+2.5*ncols)/(1-cbar_frac), 2.5*nrows)
 fig, axes = pylab.subplots(
-    figsize=(1+2.5*ncols, 2.5*nrows),
+    figsize = figsize,
     ncols=ncols, nrows=nrows,
-    sharex=True, sharey=True
-    )
+    sharex=True, sharey=True,
+    gridspec_kw = dict(left=0.03, top = 0.975, bottom = 0.025, right = (1-cbar_frac), hspace=0.5),
+)
 cmap = pylab.get_cmap("twilight")
+cax = fig.add_axes(rect=[0.925, 0.3, 0.03, 0.4])
 for (study, ax) in zip(sample_info.study.unique(), axes.flatten()):
     scores = joint_loading @ std_data.loc[:, std_data.columns.map(sample_info.study) == study]
     times = sample_info[sample_info.study == study].time % 24
-    ax.scatter(scores.values[0], scores.values[1], c=cmap(times / 24))
+    h = ax.scatter(scores.values[0], scores.values[1], c = times, cmap="twilight", vmin=0, vmax=24)#c=(times/24), cmap=cmap)
     ax.set_title(format_study_name(study))
     ax.set_xticks([])
     ax.set_yticks([])
@@ -146,9 +151,37 @@ for ax in axes.flatten()[remove_unplotted]:
     ax.remove()
 fig.supxlabel(f"Joint PC 1 ({joint_pct_explained[0]:0.1%})")
 fig.supylabel(f"Joint PC 2 ({joint_pct_explained[1]:0.1%})")
-fig.tight_layout()
+#fig.tight_layout()
+cbar = fig.colorbar(h, cax=cax, label="Time")
+cbar.set_ticks([0,6,12,18,24])
+#cbar.set_ticklabels([0,6,12,18,24])
 fig.savefig(outdir / f"jive_pca.1.2.png", dpi=300)
 
+JIVE_data = pandas.concat([pandas.DataFrame({
+        "x": (joint_loading @ std_data.loc[:, std_data.columns.map(sample_info.study) == study]).values[0],
+        "y": (joint_loading @ std_data.loc[:, std_data.columns.map(sample_info.study) == study]).values[1],
+        "time": sample_info[sample_info.study == study].time % 24,
+        "study": study,
+    }) for study in sample_info.study.unique()
+])
+
+#fig = sns.relplot(
+#    x = "x",
+#    y = "y",
+#    hue = "time",
+#    hue_norm = (0,24),
+#    palette = "twilight",
+#    col = "study",
+#    col_wrap = 8,
+#    data = JIVE_data,
+#)
+#fig.set(xlabel='', ylabel='')
+#fig.set_xticklabels([])
+#fig.set_yticklabels([])
+#fig.figure.supxlabel(f"Joint PC 1 ({joint_pct_explained[0]:0.1%})")
+#fig.figure.supylabel(f"Joint PC 2 ({joint_pct_explained[1]:0.1%})")
+#fig.savefig(outdir / f"jive_pca.1.2.png", dpi=300)
+#
 # Perform the consensus PCA
 u, s, vt = scipy.sparse.linalg.svds(normalized_data, k=4)
 total_var = (normalized_data**2).sum().sum()

@@ -60,10 +60,11 @@ summary['category'] = 'symmetric'
 summary.loc[asymmetric, 'category'] = 'asymmetric'
 summary.loc[num_peaks > 1, 'category'] = 'multimodal'
 print(f"Number of rhythmic genes by category:\n{summary[use].category.value_counts()}")
+dark2 = pylab.get_cmap("Dark2")
 color_by_category = {
-        "symmetric": "g",
-        "asymmetric": "b",
-        "multimodal": "r",
+        "symmetric": dark2(0),
+        "asymmetric": dark2(1),
+        "multimodal": dark2(2),
 }
 
 ## Plot the gene fits for core clock genes
@@ -120,10 +121,13 @@ for gene, name in zip(genes, names):
         ax.scatter(times%24, numpy.log(study_tpm+0.01), marker='+', color='r', label="Raw data")
         ax.plot((study_u * 24)[order], study_values[order], color='k', label='Study fit')
         ax.set_title(styles.format_study_name(study))
+        ax.set_xticks([0,6,12,18,24])
     for ax in axes[:,0]:
         ax.set_ylabel("log TPM")
     for ax in axes[-1,:]:
         ax.set_xlabel("Time")
+    for ax in axes.flatten()[len(studies):]:
+        ax.remove()
     fig.suptitle(f"{gene} | {name}")
     fig.tight_layout()
     fig.savefig(snakemake.output.gene_plot_dir+f"/{gene}.by_study.png", dpi=DPI)
@@ -205,7 +209,7 @@ for gene, curve in curves_normalized.sample(300).iterrows():
              yscale * curve.values + pca.scores.loc[gene, 'comp_1'],
              #c=colormap((scale(summary.loc[gene, colorby]) - cmin) / (cmax - cmin)),
              c = color_by_category[summary.loc[gene, 'category']],
-             linewidth=0.5)
+             linewidth=1.5)
 ax.set_axis_off()
 ax.set_title("PCA of Curve Fits")
 legend_from_colormap(fig, color_by_category)
@@ -231,7 +235,7 @@ for gene, curve in curves_normalized.sample(300).iterrows():
              yscale * (curve.values) + tsne.loc[gene, 'comp_1'],
              #c=colormap((scale(summary.loc[gene, colorby]) - cmin) / (cmax - cmin)),
              c = color_by_category[summary.loc[gene, 'category']],
-             linewidth=0.5)
+             linewidth=1.5)
 ax.set_axis_off()
 ax.set_title("t-SNE of Curve Fits")
 fig.tight_layout()

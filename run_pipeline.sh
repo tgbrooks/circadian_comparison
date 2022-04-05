@@ -1,4 +1,5 @@
 #!/usr/bin/env sh
+set -e
 module load /project/itmatlab/sharedmodules/use.shared
 module load sratoolkit-2.11.0
 module load salmon-v1.4.0

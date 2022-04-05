@@ -48,7 +48,8 @@ rule all:
                 "amplitude_scatter_grid.png",
                 "consensus_pca/",
                 "outlier_samples.txt",
-                "assess_jtk/period_statistics.txt"
+                "assess_jtk/period_statistics.txt",
+                "study_table.txt",
             ]
         ),
         # NOTE: big computation, ~500 hours of CPU time
@@ -371,6 +372,7 @@ rule plot_jtk:
         periods = "results/{tissue}/jtk{period}/periods.png",
         amplitudes = "results/{tissue}/jtk{period}/amplitudes.png",
         phases = "results/{tissue}/jtk{period}/phases.png",
+        phase_heatmap = "results/{tissue}/jtk{period}/phases.heatmap.png",
     script:
         "scripts/plot_jtk.py"
 
@@ -619,3 +621,13 @@ rule assess_period_differences:
     script:
         "scripts/assess_period_differences.py"
 
+rule study_table:
+    input:
+        sample_info = "results/{tissue}/all_samples_info.txt",
+        outliers = "results/{tissue}/outlier_samples.txt",
+    output:
+        table = "results/{tissue}/study_table.txt",
+    params:
+        studies = select_tissue(studies),
+    script:
+        "scripts/generate_study_table.py"

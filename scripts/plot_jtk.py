@@ -3,12 +3,14 @@ import math
 import pathlib
 import pandas
 import numpy
+import scipy.stats
 import matplotlib
 matplotlib.use("Agg")
 import pylab
 
 import util
-from styles import format_study_name
+from styles import format_study_name, color_by_sex, color_by_light
+from studies import targets as study_info
 
 studies = snakemake.params.studies
 N_studies = len(studies)
@@ -108,6 +110,42 @@ for ax in axes.flatten()[remove_unplotted]:
 util.legend_from_colormap(fig, color_by_strictness, names={s:f"Q < {c:0.2f}" for s,c in Q_CUTOFFS.items()})
 fig.tight_layout()
 fig.savefig(snakemake.output.phases, dpi=DPI)
+
+# Heatmap of phases
+fig, main_ax= pylab.subplots(figsize=(10,10), sharey=True)
+density_by_study = numpy.zeros(shape=(len(include_studies), len(bins)-1))
+for i, study in enumerate(include_studies):
+    phase = phases['loose'][study]
+    if len(phase) < 2:
+        continue
+    #counts, edges = numpy.histogram(phase, bins)
+    #density_by_study[i,:]  = counts
+    kde = scipy.stats.gaussian_kde(phase.values)
+    vals = kde(bins[:-1]+0.5) * len(phase)
+    density_by_study[i,:] = vals
+cmap = matplotlib.cm.get_cmap().copy()
+#cmap.set_bad(cmap(0))
+# main values
+h = main_ax.imshow(
+    density_by_study,
+    cmap = cmap,
+    norm = matplotlib.colors.LogNorm(vmin=1),
+)
+# study info values
+main_ax.imshow(
+    [[color_by_sex[study_info[study]['sex']], color_by_light[study_info[study]['light']]]
+        for study in include_studies],
+    extent = (-3.5,-1.5,-0.5, len(include_studies)-0.5)
+)
+main_ax.set_xlim(-3.5, len(bins)-1-0.5)
+main_ax.set_yticks(numpy.arange(len(include_studies)))
+main_ax.set_yticklabels([study_info[study]['short_name'] for study in include_studies])
+time_labels = numpy.arange(0, jtk_period+1, jtk_period//4)
+main_ax.set_xticks(numpy.concatenate(([-3,-2],time_labels))-0.5)
+main_ax.set_xticklabels(['sex', 'light'] + [str(x) for x in time_labels])
+main_ax.set_xlabel("Phase (hrs)")
+fig.colorbar(h)
+fig.savefig(snakemake.output.phase_heatmap, dpi=DPI)
 
 # Histogram of amplitudes
 fig, axes = pylab.subplots(figsize=(1+5*N_COLUMNS,0.7+0.7*N_ROWS), nrows=N_ROWS, ncols=N_COLUMNS, sharex=True, squeeze=False)
