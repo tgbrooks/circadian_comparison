@@ -22,11 +22,19 @@ targets = {
         "sample_selector": lambda x: True,
     },
 
+    #### LIVER ####
     "Yang16A_M": {
         "GSE": "GSE70497",
         "sample_selector": lambda x: x['genotype/variation'] == "WT",
         "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns]['sample collection time'])),
         "tissue": "Liver",
+        "short_name": "Yang16A",
+        "sex": "M",
+        "age_low": 16,
+        "age_high": 24,
+        "light": "DD",
+        "D_time": 36,
+        "note": "tamoxifen treated",
     },
 
     "Yang16B_M": {
@@ -35,6 +43,11 @@ targets = {
         "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns]['sample collection time'])),
         "tissue": "Liver",
         "highlight": True,
+        "short_name": "Yang16B",
+        "sex": "M",
+        "age_low": 6,
+        "age_high": 14,
+        "light": "LD",
     },
 
     "Yang16B_F": {
@@ -42,6 +55,11 @@ targets = {
         "sample_selector": lambda x: x['genotype/variation'] == "WT" and x.Sex == "female",
         "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns]['sample collection time'])),
         "tissue": "Liver",
+        "short_name": "Yang16C",
+        "sex": "F",
+        "age_low": 6,
+        "age_high": 14,
+        "light": "LD",
     },
 
     "Lahens15": {
@@ -49,6 +67,11 @@ targets = {
         "sample_selector": lambda x: True,
         "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns].time)),
         "tissue": "Liver",
+        "sex": "M",
+        "light": "DD",
+        "D_time": 36,
+        "age_low": 6,
+        "age_high": 6,
     },
 
     "Weger18_Liver_M": {
@@ -58,6 +81,11 @@ targets = {
         "tissue": "Liver",
         "seq":  "RiboZero",
         "highlight": True,
+        "short_name": "Weger18A",
+        "sex": "M",
+        "light": "LD",
+        "age_low": 15,
+        "age_high": 16,
     },
 
     "Weger18_Liver_F": {
@@ -66,6 +94,11 @@ targets = {
         "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns]['zeitgeber time'])),
         "tissue": "Liver",
         "seq":  "RiboZero",
+        "short_name": "Weger18B",
+        "sex": "F",
+        "light": "LD",
+        "age_low": 15,
+        "age_high": 16,
      },
 
     "Zhang14_RNAseq_Liver_M": {
@@ -73,6 +106,12 @@ targets = {
         "sample_selector": lambda x: x.tissue == "liver",
         "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns].title)),
         "tissue": "Liver",
+        "short_name": "Zhang14",
+        "sex": "M",
+        "light": "DD",
+        "D_time": 30,
+        "age_low": 6,
+        "age_high": 7,
     },
 
     "Pan19": {
@@ -80,6 +119,11 @@ targets = {
         "sample_selector": lambda x: x["genotype/variation"] =="WT",
         "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns].title)),
         "tissue": "Liver",
+        "sex": "M",
+        "light": "DD",
+        "D_time": 24,
+        "age_low": 8,
+        "age_high": 12,
     },
 
     "Morton20_Liver": {
@@ -88,6 +132,11 @@ targets = {
         "time": lambda sample_data, expression_table: only_number(list(sample_data.loc[expression_table.columns]['time point'])),
         "tissue": "Liver",
         "highlight": True,
+        "short_name": "Morton20",
+        "sex": "M",
+        "light": "LD",
+        "age_low": 26,
+        "age_high": 26,
     },
 
     "Atger15_AdLib": {
@@ -97,6 +146,11 @@ targets = {
         "tissue": "Liver",
         "seq":  "RiboZero",
         "highlight": True,
+        "short_name": "Atger15A",
+        "sex": "M",
+        "light": "LD",
+        "age_low": 12,
+        "age_high": 14,
     },
 
     "Atger15_NightFeed": {
@@ -105,6 +159,12 @@ targets = {
         "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns].title)),
         "tissue": "Liver",
         "seq":  "RiboZero",
+        "short_name": "Atger15B",
+        "sex": "M",
+        "light": "LD",
+        "age_low": 12,
+        "age_high": 14,
+        "note": "night-restricted feeding"
     },
 
     "Koike12_RNAseq": {
@@ -112,6 +172,7 @@ targets = {
         "sample_selector": lambda x: x["genotype/variation"] == "wild-type",
         "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns].time)),
         # NOTE: this study has SOLiD data, not compatible with Illumina data. Would need another way to align
+        "short_name": "Koike12",
     },
 
     "Manella21_Liver": {
@@ -120,6 +181,12 @@ targets = {
         "time": lambda sample_data, expression_table: manella21_time(list(sample_data.loc[expression_table.columns].title)),
         "tissue": "Liver",
         "seq": "3prime",
+        "short_name": "Manella21",
+        "sex": "M",
+        "light": "LD",
+        "age_low": 12,
+        "age_high": 16,
+        "note": "Alb-Cre+",
         #"highlight": True, # Genotype is not strictly WT
     },
 
@@ -129,6 +196,11 @@ targets = {
         "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns].title)),
         "tissue": "Liver",
         "highlight": True,
+        "short_name": "Guan20",
+        "sex": "M",
+        "light": "LD",
+        "age_low": float("NaN"),
+        "age_high": float("NaN"),
     },
 
     "Koronowski19_F": {
@@ -136,6 +208,11 @@ targets = {
         "sample_selector": lambda x: x['genotype/variation'] == "WT",
         "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns]['time of harvest'])),
         "tissue": "Liver",
+        "short_name": "Koronowksi19",
+        "sex": "F",
+        "light": "LD",
+        "age_low": 8,
+        "age_high": 12,
     },
 
     "Meng20": {
@@ -143,6 +220,10 @@ targets = {
         "sample_selector": lambda x: x.genotype == "Xbp1 flx/flx (WT, wild-type)",
         "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns]['time point'])),
         "tissue": "Liver",
+        "sex": "M",
+        "light": "DD",
+        "age_low": 12,
+        "age_high": 16,
     },
 
     "Xin21_Liver_NightFeed": {
@@ -151,6 +232,12 @@ targets = {
         "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns]['zeitgeber time in hours'])),
         "tissue": "Liver",
         "seq":  "RiboZero",
+        "short_name": "Xin21",
+        "sex": "F",
+        "light": "LD",
+        "age_low": 9,
+        "age_high": 9,
+        "note": "night-restricted feeding"
     },
 
     "Yang20": {
@@ -158,6 +245,11 @@ targets = {
         "sample_selector": lambda x: x.genotype == "WT",
         "time": lambda sample_data, expression_table: list(sample_data.loc[expression_table.columns]['sample collection time']),
         "tissue": "Liver",
+        "sex": "M",
+        "light": "DD",
+        "age_low": 16,
+        "age_high": 24,
+        "D_time": 36,
     },
 
     "Kinouchi18_Liver": {
@@ -165,6 +257,11 @@ targets = {
         "sample_selector": lambda x: x.source_name_ch1 == "Liver" and "ad libitum" in x['timepoint/condition'],
         "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns].title)),
         "tissue": "Liver",
+        "short_name": "Kinouchi18",
+        "sex": "M",
+        "light": "LD",
+        "age_low": 8,
+        "age_high": 8,
     },
 
     "Weger20_Bmal1WT": {
@@ -173,6 +270,11 @@ targets = {
         "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns]['zeitgeber time'])),
         "tissue": "Liver",
         "highlight": True,
+        "short_name": "Weger20A",
+        "sex": "M",
+        "light": "LD",
+        "age_low": 9,
+        "age_high": 14,
     },
 
     "Weger20_HlfDbpTefWT": {
@@ -181,6 +283,11 @@ targets = {
         "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns]['zeitgeber time'])),
         "tissue": "Liver",
         "highlight": True,
+        "short_name": "Weger20B",
+        "sex": "M",
+        "light": "LD",
+        "age_low": 9,
+        "age_high": 14,
     },
 
     "Weger20_CryWT": {
@@ -189,6 +296,11 @@ targets = {
         "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns]['zeitgeber time'])),
         "tissue": "Liver",
         "highlight": True,
+        "short_name": "Weger20C",
+        "sex": "M",
+        "light": "LD",
+        "age_low": 9,
+        "age_high": 14,
     },
 
     "Mermet18": {
@@ -198,14 +310,22 @@ targets = {
         "sample_selector":  lambda x: x.genotype == "Cry1IntronWT" and x.tissue == "Liver" and x.source_name_ch1 == "PolyA-selected RNA",
         "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns]['title'])),
         "tissue": "Liver",
+        "sex": "M",
+        "light": "LD",
+        "age_low": 8,
+        "age_high": 12,
     },
-#start
+
     "Benegiamo18": {
         "GSE": "GSE98042",
         "sample_selector": lambda x: x.genotype == "wild type" and x.tissue == "total liver",
         "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns]['time point'])),
         "tissue": "Liver",
         "seq":  "RiboZero",
+        "sex": "unknown",
+        "light": "LD",
+        "age_low": float("NaN"),
+        "age_high": float("NaN"),
     },
 
     "Cajan16": {
@@ -214,6 +334,10 @@ targets = {
         "sample_selector": lambda x: "Liver" in x.title,
         "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns]['title'])),
         "tissue": "Liver",
+        "sex": "M",
+        "light": "LD",
+        "age_low": 10,
+        "age_high": 12,
     },
 
     "Chaix19_AdLib_HFD": {
@@ -222,6 +346,12 @@ targets = {
         "sample_selector": lambda x: x.genotype == "WT" and x['feeding group'] == "FA",
         "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns]['time'])),
         "tissue": "Liver",
+        "short_name": "Chaix19A",
+        "sex": "M",
+        "light": "LD",
+        "age_low": 24,
+        "age_high": 24,
+        "note": "high fat diet",
     },
 
     "Chaix19_NightFeed_HFD": {
@@ -230,6 +360,12 @@ targets = {
         "sample_selector": lambda x: x.genotype == "WT" and x['feeding group'] == "FT",
         "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns]['time'])),
         "tissue": "Liver",
+        "short_name": "Chaix19B",
+        "sex": "M",
+        "light": "LD",
+        "age_low": 24,
+        "age_high": 24,
+        "note": "night-restricted feeding; high fat diet"
     },
 
     "Chen19": {
@@ -237,6 +373,11 @@ targets = {
         "sample_selector": lambda x: "CT" in x.title,
         "time": lambda sample_data, expression_table: only_number(list(sample_data.loc[expression_table.columns]['title'])),
         "tissue": "Liver",
+        "sex": "M",
+        "light": "DD",
+        "D_time": 1008,
+        "age_low": 6,
+        "age_high": 6,
     },
 
     "Du14": {
@@ -245,6 +386,10 @@ targets = {
         "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns]['timepoint'])),
         "tissue": "Liver",
         "seq":  "RiboZero",
+        "sex": "M",
+        "light": "LD",
+        "age_low": 12,
+        "age_high": 24,
     },
 
     "Fader19": {
@@ -253,6 +398,10 @@ targets = {
         "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns]['timepoint'])),
         "tissue": "Liver",
         "highlight": True,
+        "sex": "M",
+        "light": "LD",
+        "age_low": 9,
+        "age_high": 10,
     },
 
     "Gaucher19_Chronic_Cntrl": {
@@ -260,6 +409,12 @@ targets = {
         "sample_selector": lambda x: "CHRONIC_CTRL" in x.title,
         "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns]['title'])),
         "tissue": "Liver",
+        "short_name": "Gaucher19A",
+        "sex": "M",
+        "light": "LD",
+        "age_low": 9,
+        "age_high": 24,
+
     },
 
     "Gaucher19_Acute_Cntrl": {
@@ -267,7 +422,12 @@ targets = {
         "sample_selector": lambda x: "ACUTE_CTRL" in x.title,
         "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns]['title'])),
         "tissue": "Liver",
+        "short_name": "Gaucher19B",
         # NOTE: this study has irregular timepoint CT1 resulting in run JTK error
+        "sex": "M",
+        "light": "LD",
+        "age_low": 9,
+        "age_high": 24,
     },
 
     "Greenwell19_AdLib": {
@@ -277,6 +437,11 @@ targets = {
         "tissue": "Liver",
         "seq": "3prime",
         "highlight": True,
+        "short_name": "Greenwell19A",
+        "sex": "M",
+        "light": "LD",
+        "age_low": 12,
+        "age_high": 13,
     },
 
     "Greenwell19_NightFeed": {
@@ -285,6 +450,12 @@ targets = {
         "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns]['title'])),
         "tissue": "Liver",
         "seq": "3prime",
+        "short_name": "Greenwell19B",
+        "sex": "M",
+        "light": "LD",
+        "age_low": 12,
+        "age_high": 13,
+        "note": "night-restricted feeding"
     },
 
     "Hidalgo19": {
@@ -293,6 +464,10 @@ targets = {
         "time": lambda sample_data, expression_table: list(sample_data.loc[expression_table.columns]['zeitgeber time']),
         "tissue": "Liver",
         "highlight": True,
+        "sex": "M",
+        "light": "LD",
+        "age_low": 8,
+        "age_high": 9,
     },
 
     "Hirako18": {
@@ -300,6 +475,10 @@ targets = {
         "sample_selector": lambda x: x.agent == "Control",
         "time": lambda sample_data, expression_table: hirako18_time(list(sample_data.loc[expression_table.columns]['time point'])),
         "tissue": "Liver",
+        "sex": "F",
+        "light": "LD",
+        "age_low": 10,
+        "age_high": 10,
     },
 
     "Janich15": {
@@ -308,6 +487,10 @@ targets = {
         "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns]['timepoint'])),
         "tissue": "Liver",
         "trim_adaptor": "-a AGATCGGAAGAGCACACGTCTGAACTCCAGTCAC --match-read-wildcards -m 6",
+        "sex": "M",
+        "light": "LD",
+        "age_low": 11,
+        "age_high": 12,
     },
 
     "Levine20": {
@@ -316,6 +499,10 @@ targets = {
         "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns]['collection time point'])),
         "tissue": "Liver",
         "highlight": True,
+        "sex": "M",
+        "light": "LD",
+        "age_low": 32,
+        "age_high": 32,
     },
 
     "Li19_Young": {
@@ -323,6 +510,11 @@ targets = {
         "sample_selector": lambda x: "Young" in x.title,
         "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns]['time'])),
         "tissue": "Liver",
+        "short_name": "Li19A",
+        "sex": "M",
+        "light": "LD",
+        "age_low": 16,
+        "age_high": 16,
     },
 
     "Li19_Old": {
@@ -330,6 +522,11 @@ targets = {
         "sample_selector": lambda x: "Old" in x.title,
         "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns]['time'])),
         "tissue": "Liver",
+        "short_name": "Li19B",
+        "sex": "M",
+        "light": "LD",
+        "age_low": 76,
+        "age_high": 76,
     },
 
     "Menet12": {
@@ -338,6 +535,10 @@ targets = {
         "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns]['time'])),
         "tissue": "Liver",
         "highlight": True,
+        "sex": "M",
+        "light": "LD",
+        "age_low": 12,
+        "age_high": 24,
     },
 
     "Quagliarini19_NormalDiet": {
@@ -346,6 +547,11 @@ targets = {
         "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns]['title'])),
         "tissue": "Liver",
         "highlight": True,
+        "short_name": "Quagliarini19A",
+        "sex": "M",
+        "light": "LD",
+        "age_low": 17,
+        "age_high": 18
     },
 
     "Quagliarini19_HFD": {
@@ -353,6 +559,12 @@ targets = {
         "sample_selector": lambda x: "HFD REP" in x.title,
         "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns]['title'])),
         "tissue": "Liver",
+        "short_name": "Quagliarini19B",
+        "sex": "M",
+        "light": "LD",
+        "age_low": 17,
+        "age_high": 18,
+        "note": "high fat diet",
     },
 
     "Quagliarini19_NormalDiet_WTvsKO": {
@@ -361,6 +573,11 @@ targets = {
         "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns]['title'])),
         "tissue": "Liver",
         "highlight": True,
+        "short_name": "Quagliarini19C",
+        "sex": "M",
+        "light": "LD",
+        "age_low": 17,
+        "age_high": 18,
     },
 
     "Quagliarini19_HFD_WTvsKO": {
@@ -368,6 +585,12 @@ targets = {
         "sample_selector": lambda x: "HFD WT" in x.title,
         "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns]['title'])),
         "tissue": "Liver",
+        "short_name": "Quagliarini19D",
+        "sex": "M",
+        "light": "LD",
+        "age_low": 17,
+        "age_high": 18,
+        "note": "high fat diet",
     },
 
     "Stubblefield18": {
@@ -377,6 +600,10 @@ targets = {
         "tissue": "Liver",
         "seq":  "RiboZero",
         "highlight": True,
+        "sex": "M",
+        "light": "LD",
+        "age_low": 9,
+        "age_high": 12,
     },
 
     "Wu19": {
@@ -385,7 +612,13 @@ targets = {
         "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns]['zeitgeber'])),
         "tissue": "Liver",
         "seq":  "RiboZero",
+        "sex": "unknown",
+        "light": "LD",
+        "age_low": 16,
+        "age_high": 24,
     },
+
+    #### Kidney Studies ####
 
     "Yeung17": {
         "GSE": "GSE100457",
@@ -393,7 +626,7 @@ targets = {
         "sample_selector": lambda x: x.genotype == "WT" and "RNASeq" in x.title,
         "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns]['time'])),
         "tissue": "Kidney",
-        "seq":  "unkown",
+        "seq": "unknown",
     },
 
     "Zhang14_RNAseq_Kidney_M": {
@@ -439,6 +672,23 @@ targets = {
         "seq":  "RiboZero",
     },
 }
+
+for name, target in targets.items():
+    # Give default values
+    if 'short_name' not in target:
+        target['short_name'] = name
+    if 'sex' not in target:
+        target['sex'] = 'unknown'
+    if 'light' not in target:
+        target['light'] = 'unknown'
+    if 'seq' not in target:
+        target['seq'] = 'unknown'
+    if 'age_low' not in target:
+        target['age_low'] = float("NaN")
+    if 'age_high' not in target:
+        target['age_high'] = float("NaN")
+    if 'seq' not in target:
+        taret['seq'] = 'unknown'
 
 # List of studies to perform
 studies = [
