@@ -4,7 +4,9 @@ import re
 import pandas
 from  scripts.process_series_matrix import process_series_matrix
 
-from studies import targets, studies, sample_timepoints, tissues, select_tissue, studies_by_tissue
+from studies import targets, studies, sample_timepoints, select_tissue, studies_by_tissue
+
+tissues = ["Liver"]
 
 SPLINE_FIT_N_BATCHES = 400
 # Require at least this number of mean reads per gene to include in q-value computations
@@ -625,9 +627,18 @@ rule study_table:
     input:
         sample_info = "results/{tissue}/all_samples_info.txt",
         outliers = "results/{tissue}/outlier_samples.txt",
+        study_classification = "results/study_classification.json",
     output:
         table = "results/{tissue}/study_table.txt",
     params:
         studies = select_tissue(studies),
     script:
         "scripts/generate_study_table.py"
+
+rule assess_phase_variability:
+    input:
+        spline_fit_summary = "results/{tissue}/spline_fit/summary.full.txt"
+    output:
+        phase_std_distribution = "results/{tissue}/spline_fit/phase_variability/phase_std_distribution.png"
+    script:
+        "scripts/assess_phase_variability.py"
