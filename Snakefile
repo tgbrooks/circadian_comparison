@@ -61,6 +61,8 @@ rule all:
         "results/Liver/spline_fit/stats/",
         "results/Liver/spline_fit_perm/1/summary.txt",
         "results/Liver/spline_fit_perm/1/stats/",
+        "results/Liver/stable_genes/stable_gene_list.txt",
+        "results/Liver/spline_fit/phase_variability/phase_std_distribution.png"
 
 rule get_series_matrix:
     output:
@@ -395,16 +397,18 @@ rule plot_overlapped_genes:
     script:
         "scripts/plot_overlapped_genes.py"
 
-rule nonrhythmic_genes:
+rule assess_stable_genes:
     input:
-        jtk = lambda wildcards: expand("data/{study}/jtk.results.txt", study=studies_by_tissue(wildcards.tissue)),
-        tpm = lambda wildcards: expand("data/{study}/expression.tpm.txt", study=studies_by_tissue(wildcards.tissue)),
-    params:
-        studies = select_tissue(studies),
+        tpm = "results/{tissue}/tpm_all_samples.txt",
+        sample_info = "results/{tissue}/all_samples_info.txt",
+        outliers = "results/{tissue}/outlier_samples.txt",
+        jtk = "results/{tissue}/jtk24.results.txt",
+        spline_fit_summary = "results/{tissue}/spline_fit/summary.full.txt",
     output:
-        nonrhythmic_genes = "results/{tissue}/common_nonrhythmic_genes.txt",
+        stable_gene_list = "results/{tissue}/stable_genes/stable_gene_list.txt",
+        stable_table = "results/{tissue}/stable_genes/gene_stability.txt",
     script:
-        "scripts/nonrhythmic_genes.py"
+        "scripts/assess_stable_genes.py"
 
 rule plot_PCA:
     input:
