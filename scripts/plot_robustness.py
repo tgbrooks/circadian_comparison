@@ -55,6 +55,7 @@ fig, ax = pylab.subplots(figsize=(4,4))
 ax.hist(robustness_score)
 ax.set_xlabel("Robustness Score")
 ax.set_ylabel("Num. Genes")
+ax.set_yscale('log')
 fig.tight_layout()
 fig.savefig(snakemake.output.histogram, dpi=DPI)
 
