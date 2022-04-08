@@ -4,11 +4,13 @@ import pandas
 import numpy
 import seaborn as sns
 import scipy.interpolate
+import scipy.special
 import statsmodels.multivariate.pca
 import sklearn.manifold
 import pylab
 import matplotlib
 
+from studies import targets
 import styles
 
 def legend_from_colormap(fig, colormap, names=None, **kwargs):
@@ -41,25 +43,8 @@ re_structure = pandas.read_csv("results/Liver/spline_fit/re_structure.txt", sep=
 num_peaks = pandas.read_csv(snakemake.input.num_peaks, sep="\t", index_col=0)['0']
 asymmetric = pandas.read_csv(snakemake.input.asymmetric, sep="\t", index_col=0)['0']
 goodness_of_fit = pandas.read_csv(snakemake.input.goodness_of_fit, sep="\t")
-rsquared = goodness_of_fit.groupby("gene").Rsquared2.median()
-summary['rsquared'] = rsquared
 
-#num_zeros = (tpm == 0).sum(axis=1)
-summary['median_t'] =  (curves.abs()/curves_pstd).median(axis=1)
-summary['rel_amp'] = summary['fit_amplitude'] / summary['sigma']
-
-# Select genes to use
-use = (summary.re_logAmp_sd < 3) & (summary.funcDf < 15) & (summary.median_t > 2) & (summary.iteration_times < 31) & (summary.rsquared > 0.25)
-print(f"Using {use.sum()} out of {len(use)} genes.")
-
-## Determine 3 categories of significant genes
-# 1. Monomodal, symmetric
-# 2. Monomodal, asymmetric
-# 3. Multimodal
-summary['category'] = 'symmetric'
-summary.loc[asymmetric, 'category'] = 'asymmetric'
-summary.loc[num_peaks > 1, 'category'] = 'multimodal'
-print(f"Number of rhythmic genes by category:\n{summary[use].category.value_counts()}")
+use = summary.is_rhythmic
 dark2 = pylab.get_cmap("Dark2")
 color_by_category = {
         "symmetric": dark2(0),
@@ -68,8 +53,7 @@ color_by_category = {
 }
 
 ## Plot the gene fits for core clock genes
-def alogit(x):
-    return numpy.exp(x) / (numpy.exp(x) + 1)
+alogit = scipy.special.expit
 genes = ["ENSMUSG00000055116", "ENSMUSG00000020038", "ENSMUSG00000068742", "ENSMUSG00000020893", "ENSMUSG00000055866", "ENSMUSG00000028957", "ENSMUSG00000020889", "ENSMUSG00000021775", "ENSMUSG00000059824", "ENSMUSG00000029238", "ENSMUSG00000057342", "ENSMUSG00000016619"]
 names= ["Arntl", "Cry1", "Cry2", "Per1", "Per2", "Per3", "Nr1d1", "Nr1d2", "Dbp", "Clock", "Sphk2", "Nup50"]
 re_by_studygene = re.reset_index().set_index(['gene', 'study'])
@@ -120,7 +104,7 @@ for gene, name in zip(genes, names):
         # Plot raw data and the study-specific spline fit
         ax.scatter(times%24, numpy.log(study_tpm+0.01), marker='+', color='r', label="Raw data")
         ax.plot((study_u * 24)[order], study_values[order], color='k', label='Study fit')
-        ax.set_title(styles.format_study_name(study))
+        ax.set_title(targets[study]['short_name'])
         ax.set_xticks([0,6,12,18,24])
     for ax in axes[:,0]:
         ax.set_ylabel("log TPM")

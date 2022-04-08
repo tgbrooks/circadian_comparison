@@ -3,6 +3,7 @@ import math
 import pandas
 import numpy
 import scipy.interpolate
+import scipy.special
 import statsmodels.multivariate.pca
 import sklearn.manifold
 import pylab
@@ -15,7 +16,7 @@ DPI = 300
 # fit curves to be elevated above the mean
 T_STAT_ELEVATED_CUTOFF = 2
 
-out_dir = pathlib.Path(snakemake.output[0])
+out_dir = pathlib.Path(snakemake.output.out_dir)
 out_dir.mkdir(exist_ok=True)
 
 # Load original information
@@ -40,9 +41,46 @@ re_by_studygene = re.reset_index().set_index(['gene', 'study'])
 re_studies = re.study.unique()
 studies = [study for study in styles.studies if study in re_studies] # Get order of studies consistent
 
+def calc_goodness_of_fit(curves, tpm):
+    res = []
+    for gene in curves.index:
+        u = curves.loc[gene].index.astype(float)
+        value = curves.loc[gene]
 
-def alogit(x):
-    return numpy.exp(x) / (numpy.exp(x) + 1)
+        for study in studies:
+            logAmp, phi, mesor = re_by_studygene.loc[(gene, study)]
+            study_samples = sample_info.index[sample_info.study == study]
+            study_tpm = tpm[study_samples].loc[gene]
+            study_u = (sample_info.loc[study_samples].time / 24 - (scipy.special.expit(phi) - 0.5))
+            study_values = numpy.log(study_tpm+0.01)
+            fit_values = numpy.exp(logAmp)*numpy.interp(study_u, u, value, period=1) + mesor + summary.loc[gene].fit_mesor
+            resid = (study_values - fit_values)
+            res.append({
+                "gene": gene,
+                "study": study,
+                "SS_resid": (resid**2).sum(),
+                "SS_total": ((study_values - study_values.mean())**2).sum(),
+                "SS_reg": ((fit_values - fit_values.mean())**2).sum(),
+            })
+    res = pandas.DataFrame(res)
+    res['Rsquared'] = (res.SS_total - res.SS_resid) / (res.SS_total)
+    return res
+goodness_of_fit = calc_goodness_of_fit(curves, tpm)
+goodness_of_fit.to_csv(out_dir / "goodness_of_fit.txt", sep="\t")
+
+
+## Add the all the results to the summary dataframe
+rsquared = goodness_of_fit.groupby("gene").Rsquared.median()
+summary['rsquared'] = rsquared
+
+#num_zeros = (tpm == 0).sum(axis=1)
+summary['median_t'] =  (curves.abs()/curves_pstd).median(axis=1)
+summary['rel_amp'] = summary['fit_amplitude'] / summary['sigma']
+
+# Select genes to classify as rhythmic
+is_rhythmic = (summary.re_logAmp_sd < 3) & (summary.funcDf < 15) & (summary.median_t > 2) & (summary.iteration_times < 31) & (summary.rsquared > 0.25)
+summary['is_rhythmic'] = is_rhythmic
+print(f"Found {is_rhythmic.sum()} genes rhythmic out of {len(is_rhythmic)} genes.")
 
 def all_wraps(x):
     # Given a 1-d array, return a 2-d array
@@ -62,6 +100,7 @@ def is_asymmetric(curve, curve_pstd):
 asymmetric = pandas.Series({
     gene:is_asymmetric(curves.loc[gene].values, curves_pstd.loc[gene].values)
         for gene in curves.index
+        if summary.loc[gene].is_rhythmic # non-rhythmic genes are not asymmetric
 })
 asymmetric.to_csv(out_dir / "asymmetric.txt", sep="\t")
     
@@ -104,33 +143,19 @@ def count_peaks(tstats):
 
     return numpy.maximum(num_peaks, num_troughs)
 
-num_peaks = count_peaks(tstats)
+num_peaks = count_peaks(tstats[summary.is_rhythmic])
 num_peaks.to_csv(out_dir / "num_peaks.txt", sep="\t")
 
-def calc_goodness_of_fit(curves, tpm):
-    res = []
-    for gene in curves.index:
-        u = curves.loc[gene].index.astype(float)
-        value = curves.loc[gene]
+## Determine 3 categories of significant genes
+# 1. Monomodal, symmetric
+# 2. Monomodal, asymmetric
+# 3. Multimodal
+summary['num_peaks'] = summary.index.map(num_peaks).fillna(0)
+print(f"Num peaks is {summary.num_peaks.head()}")
+summary['category'] = 'symmetric'
+summary.loc[summary.index.map(asymmetric).fillna(False), 'category'] = 'asymmetric'
+summary.loc[summary.num_peaks > 1, 'category'] = 'multimodal'
+summary.loc[~summary.is_rhythmic, 'category'] = 'nonrythmic'
+print(f"Number of rhythmic genes by category:\n{summary.category.value_counts()}")
 
-        for study in studies:
-            logAmp, phi, mesor = re_by_studygene.loc[(gene, study)]
-            study_samples = sample_info.index[sample_info.study == study]
-            study_tpm = tpm[study_samples].loc[gene]
-            study_u = (sample_info.loc[study_samples].time / 24 - (alogit(phi) - 0.5))
-            study_values = numpy.log(study_tpm+0.01)
-            fit_values = numpy.exp(logAmp)*numpy.interp(study_u, u, value, period=1) + mesor + summary.loc[gene].fit_mesor
-            resid = (study_values - fit_values)
-            res.append({
-                "gene": gene,
-                "study": study,
-                "SS_resid": (resid**2).sum(),
-                "SS_total": ((study_values - study_values.mean())**2).sum(),
-                "SS_reg": ((fit_values - fit_values.mean())**2).sum(),
-            })
-    res = pandas.DataFrame(res)
-    res['Rsquared'] = res.SS_reg / res.SS_total
-    res['Rsquared2'] = (res.SS_total - res.SS_resid) / (res.SS_total)
-    return res
-goodness_of_fit = calc_goodness_of_fit(curves, tpm)
-goodness_of_fit.to_csv(out_dir / "goodness_of_fit.txt", sep="\t")
+summary.to_csv(snakemake.output.summary, sep="\t")
