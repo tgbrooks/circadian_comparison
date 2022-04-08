@@ -15,6 +15,7 @@ import scipy.sparse.linalg
 import pylab
 
 from styles import format_study_name
+from studies import targets
 import seaborn as sns
 
 tissue = snakemake.wildcards.tissue
@@ -34,6 +35,8 @@ print(f"Dropping {len(outlier_samples)} outlier samples")
 
 data = data.drop(columns=outlier_samples)
 sample_info = sample_info.drop(index=outlier_samples)
+
+studies = sorted(sample_info.study.unique(), key = lambda x: targets[x]['short_name'])
 
 robustness = pandas.read_csv(f"results/{tissue}/jtk24/robustness_score.txt", sep="\t", index_col=0)
 assert (robustness.index == data.index.get_level_values(0)).all()
@@ -130,39 +133,45 @@ nstudies = sample_info.study.nunique()
 ncols = 8
 nrows = math.ceil(nstudies / ncols)
 remove_unplotted = slice(0,0) if nstudies == ncols * nrows else slice(-(nrows* ncols) + nstudies, None)
-cbar_frac = 0.10
-figsize=((1+2.5*ncols)/(1-cbar_frac), 2.5*nrows)
+cbar_frac = 0.02
+figsize=((2.0*ncols)/(1-cbar_frac), 1.5*nrows)
 fig, axes = pylab.subplots(
     figsize = figsize,
     ncols=ncols, nrows=nrows,
     sharex=True, sharey=True,
-    gridspec_kw = dict(left=0.03, top = 0.975, bottom = 0.025, right = (1-cbar_frac), hspace=0.5),
+    gridspec_kw = dict(
+        #left=0.03, top = 0.975, bottom = 0.025, right = (1-cbar_frac),
+        hspace=0.3,
+        wspace=0.2,
+    ),
+    #constrained_layout = True,
 )
 cmap = pylab.get_cmap("twilight")
-cax = fig.add_axes(rect=[0.925, 0.3, 0.03, 0.4])
-for (study, ax) in zip(sample_info.study.unique(), axes.flatten()):
+#cax = fig.add_axes(rect=[0.925, 0.3, 0.03, 0.4])
+for (study, ax) in zip(studies, axes.flatten()):
     scores = joint_loading @ std_data.loc[:, std_data.columns.map(sample_info.study) == study]
     times = sample_info[sample_info.study == study].time % 24
     h = ax.scatter(scores.values[0], scores.values[1], c = times, cmap="twilight", vmin=0, vmax=24)#c=(times/24), cmap=cmap)
-    ax.set_title(format_study_name(study))
+    ax.set_title(targets[study]['short_name'])
     ax.set_xticks([])
     ax.set_yticks([])
+cbar = fig.colorbar(h, ax=axes.flatten(), label="Time", fraction=cbar_frac)
 for ax in axes.flatten()[remove_unplotted]:
     ax.remove()
 fig.supxlabel(f"Joint PC 1 ({joint_pct_explained[0]:0.1%})")
 fig.supylabel(f"Joint PC 2 ({joint_pct_explained[1]:0.1%})")
 #fig.tight_layout()
-cbar = fig.colorbar(h, cax=cax, label="Time")
 cbar.set_ticks([0,6,12,18,24])
 #cbar.set_ticklabels([0,6,12,18,24])
 fig.savefig(outdir / f"jive_pca.1.2.png", dpi=300)
+fig.savefig(outdir / f"jive_pca.1.2.svg")
 
 JIVE_data = pandas.concat([pandas.DataFrame({
         "x": (joint_loading @ std_data.loc[:, std_data.columns.map(sample_info.study) == study]).values[0],
         "y": (joint_loading @ std_data.loc[:, std_data.columns.map(sample_info.study) == study]).values[1],
         "time": sample_info[sample_info.study == study].time % 24,
         "study": study,
-    }) for study in sample_info.study.unique()
+    }) for study in studies
 ])
 
 #fig = sns.relplot(
@@ -202,7 +211,7 @@ for (labelA, labelB), (A,B) in pca_components.items():
         sharex=True, sharey=True
         )
     cmap = pylab.get_cmap("twilight")
-    for (study, ax) in zip(sample_info.study.unique(), axes.flatten()):
+    for (study, ax) in zip(studies, axes.flatten()):
         scores = u.T @ std_data.loc[:, std_data.columns.map(sample_info.study) == study]
         times = sample_info[sample_info.study == study].time % 24
         ax.scatter(scores.values[A], scores.values[B], c=cmap(times / 24))
@@ -244,24 +253,30 @@ loadings.to_csv(outdir / "consensus_loadings.txt", sep="\t")
 # each study, ignoring the rest.
 for (labelA, labelB), (A,B) in pca_components.items():
     fig, axes = pylab.subplots(
-        figsize=(1+2.5*ncols, 2.5*nrows),
+        figsize=((2.0*ncols)/(1-cbar_frac), 1.5*nrows),
         ncols=ncols, nrows=nrows,
-        sharex=True, sharey=True
-        )
+        sharex=True, sharey=True,
+        gridspec_kw = dict(
+            hspace=0.3,
+            wspace=0.2,
+        ),
+    )
     cmap = pylab.get_cmap("twilight")
-    for (study, ax) in zip(sample_info.study.unique(), axes.flatten()):
+    for (study, ax) in zip(studies, axes.flatten()):
         study_data = data.loc[:,sample_info.study == study]
         std_study_data = standardize(study_data)
         u2, s2, vt2 = scipy.sparse.linalg.svds(std_study_data, k=4)
         scores = u2.T @ std_study_data
         times = sample_info[sample_info.study == study].time % 24
-        ax.scatter(scores.values[A], scores.values[B], c=cmap(times / 24))
-        ax.set_title(format_study_name(study))
+        h = ax.scatter(scores.values[A], scores.values[B], c= times, cmap="twilight", vmin=0, vmax=24)
+        ax.set_title(targets[study]['short_name'])
         ax.set_xticks([])
         ax.set_yticks([])
+    cbar = fig.colorbar(h, ax=axes.flatten(), label="Time", fraction=cbar_frac)
     for ax in axes.flatten()[remove_unplotted]:
         ax.remove()
     fig.supxlabel(f"{labelA} PC")
     fig.supylabel(f"{labelB} PC")
-    fig.tight_layout()
+    #fig.tight_layout()
+    cbar.set_ticks([0,6,12,18,24])
     fig.savefig(outdir / f"individual_pca.{labelA}.{labelB}.png", dpi=300)
