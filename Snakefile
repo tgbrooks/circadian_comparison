@@ -377,6 +377,7 @@ rule plot_jtk:
         amplitudes = "results/{tissue}/jtk{period}/amplitudes.png",
         phases = "results/{tissue}/jtk{period}/phases.png",
         phase_heatmap = "results/{tissue}/jtk{period}/phases.heatmap.png",
+        phase_heatmap_svg = "results/{tissue}/jtk{period}/phases.heatmap.svg",
     script:
         "scripts/plot_jtk.py"
 
@@ -590,8 +591,11 @@ rule assess_spline_fits:
         curves_pstd = "results/{tissue}/spline_fit{permutation}/curves_pstd.txt",
         re = "results/{tissue}/spline_fit{permutation}/re.txt",
         re_structure = "results/{tissue}/spline_fit{permutation}/re_structure.txt",
+    resources:
+        mem_mb = 6_000,
     output:
-        directory("results/{tissue}/spline_fit{permutation}/stats/")
+        out_dir = directory("results/{tissue}/spline_fit{permutation}/stats/"),
+        summary = "results/{tissue}/spline_fit{permutation}/summary.full.txt"
     script:
         "scripts/assess_spline_fits.py"
 
@@ -599,7 +603,7 @@ rule plot_spline_fits:
     input:
         tpm = "results/{tissue}/tpm_all_samples.txt",
         sample_info = "results/{tissue}/all_samples_info.txt",
-        summary = "results/{tissue}/spline_fit/summary.txt",
+        summary = "results/{tissue}/spline_fit/summary.full.txt",
         outliers = "results/{tissue}/outlier_samples.txt",
         curves_fit = "results/{tissue}/spline_fit/curves_fit.txt",
         curves_pstd = "results/{tissue}/spline_fit/curves_pstd.txt",
