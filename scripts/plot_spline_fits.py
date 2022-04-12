@@ -52,13 +52,13 @@ color_by_category = {
         "multimodal": dark2(2),
 }
 
-## Plot the gene fits for core clock genes
+## Plot the gene fits for select genes
 alogit = scipy.special.expit
 genes = ["ENSMUSG00000055116", "ENSMUSG00000020038", "ENSMUSG00000068742", "ENSMUSG00000020893", "ENSMUSG00000055866", "ENSMUSG00000028957", "ENSMUSG00000020889", "ENSMUSG00000021775", "ENSMUSG00000059824", "ENSMUSG00000029238", "ENSMUSG00000057342", "ENSMUSG00000016619"]
 names= ["Arntl", "Cry1", "Cry2", "Per1", "Per2", "Per3", "Nr1d1", "Nr1d2", "Dbp", "Clock", "Sphk2", "Nup50"]
 re_by_studygene = re.reset_index().set_index(['gene', 'study'])
 re_studies = re.study.unique()
-studies = [study for study in styles.studies if study in re_studies] # Get order of studies consistent
+studies = sorted(sample_info.study.unique(), key = lambda x: targets[x]['short_name'])
 pathlib.Path(snakemake.output.gene_plot_dir).mkdir(exist_ok=True)
 for gene, name in zip(genes, names):
     if gene not in summary.index:
@@ -68,42 +68,24 @@ for gene, name in zip(genes, names):
     u = curves.loc[gene].index.astype(float)
     value = curves.loc[gene]
 
-    #fig, ax = pylab.subplots(figsize=(6,3))
-    ## Plot each fit curve for each study
-    #for study in studies:
-    #    logAmp, phi, mesor = re_by_studygene.loc[(gene, study)]
-    #    study_u = ((u + (alogit(phi) - 0.5)) % 1)
-    #    study_values = numpy.exp(logAmp)*value + mesor
-    #    order = numpy.argsort(study_u)
-    #    ax.plot( (study_u*24)[order], numpy.exp(study_values[order]), color='gray', linewidth=0.5)
-    ## Plot the overall fit
-    #ax.plot(u*24, numpy.exp(value), color='k')
-    #ax.set_title(f"{gene} | {name}")
-    #fig.savefig(snakemake.output.gene_plot_dir+f"/{gene}.png", dpi=DPI)
-    #pylab.close(fig)
-
     # Plot the original data aligned by the fit phase/amplitude
     # and with the overall fit ontop
     ncols = 7
     nrows = math.ceil(len(studies) / ncols)
     fig, axes = pylab.subplots(figsize=(12,10), nrows=nrows, ncols=ncols, sharex=True, sharey=True)
     for study, ax in zip(studies, axes.flatten()):
-        logAmp, phi, mesor = re_by_studygene.loc[(gene, study)]
-        study_u = ((u + (alogit(phi) - 0.5)) % 1)
-        study_values = numpy.exp(logAmp)*value + mesor + summary.loc[gene].fit_mesor
-        order = numpy.argsort(study_u)
         study_samples = sample_info.index[sample_info.study == study]
         study_tpm = tpm.loc[gene, study_samples]
         times = sample_info.loc[study_samples].time
-        # Align according to the phase + amplitude
-        #aligned_u = (times % 24) / 24
-        #aligned_u = ((aligned_u - (alogit(phi) - 0.5)) % 1)
-        #aligned = (numpy.log(study_tpm+0.01) - mesor)/numpy.exp(logAmp)
-        #ax.scatter(aligned_u*24, (aligned), marker='+', label="Aligned data")
-        #ax.plot(u*24, (value), color='k', label="Fit curve") # Overall plot
-        # Plot raw data and the study-specific spline fit
+        # Plot raw data
         ax.scatter(times%24, numpy.log(study_tpm+0.01), marker='+', color='r', label="Raw data")
-        ax.plot((study_u * 24)[order], study_values[order], color='k', label='Study fit')
+        if study in re_studies:
+            # plot the the study-specific spline fit
+            logAmp, phi, mesor = re_by_studygene.loc[(gene, study)]
+            study_u = ((u + (alogit(phi) - 0.5)) % 1)
+            study_values = numpy.exp(logAmp)*value + mesor + summary.loc[gene].fit_mesor
+            order = numpy.argsort(study_u)
+            ax.plot((study_u * 24)[order], study_values[order], color='k', label='Study fit')
         ax.set_title(targets[study]['short_name'])
         ax.set_xticks([0,6,12,18,24])
     for ax in axes[:,0]:
