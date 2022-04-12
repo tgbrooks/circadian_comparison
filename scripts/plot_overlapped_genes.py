@@ -6,7 +6,7 @@ import scipy.cluster.hierarchy
 import matplotlib
 matplotlib.use("Agg")
 import pylab
-from studies import sample_timepoints
+from studies import sample_timepoints, targets
 import util
 
 DPI = 300
@@ -44,9 +44,9 @@ fig, ax = pylab.subplots(figsize=(10,10))
 h = ax.imshow(results_df.loc[study_order,study_order], vmin=0, vmax=n_genes)
 ax.xaxis.tick_top()
 ax.set_xticks(numpy.arange(len(study_order)))
-ax.set_xticklabels(study_order, rotation=90)
+ax.set_xticklabels([targets[x]['short_name'] for x in study_order], rotation=90)
 ax.set_yticks(numpy.arange(len(study_order)))
-ax.set_yticklabels(study_order)
+ax.set_yticklabels([targets[x]['short_name'] for x in study_order])
 fig.colorbar(h, fraction=0.03, label="Overlap (# genes)")
 fig.tight_layout()
 fig.savefig(snakemake.output.num_common_genes_heatmap, dpi=DPI)
