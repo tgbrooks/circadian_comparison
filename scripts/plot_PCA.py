@@ -6,7 +6,7 @@ import matplotlib
 matplotlib.use("Agg")
 import pylab
 import statsmodels.api as sm
-from studies import sample_timepoints
+from studies import sample_timepoints, targets
 
 from styles import color_by_study, shape_by_study
 
@@ -32,6 +32,7 @@ for study, jtk_file in zip(studies, snakemake.input.jtk):
 
 with open("results/study_classification.json") as f:
     study_classification = json.load(f)
+study_table = pandas.read_csv(snakemake.input.study_table, sep="\t", index_col=0)
 
 robustness = pandas.read_csv(snakemake.input.robustness, sep="\t", index_col=0)['0'].sort_values(ascending=False)
 
@@ -56,18 +57,19 @@ log_data = numpy.log(data+PSEUDOCOUNT)
 PCA_by_TPM= sm.PCA(log_data.T, ncomp=2, method="nipals")
 
 # Color by study
-fig, ax = pylab.subplots(figsize=(12,12))
+fig, (ax,lax) = pylab.subplots(figsize=(10,6), constrained_layout=True, ncols=2, gridspec_kw={"width_ratios":[2,1]})
 for study, metadata in sample_info.groupby('study'):
     ax.scatter(
         PCA_by_TPM.factors.loc[metadata.index, "comp_0"],
         PCA_by_TPM.factors.loc[metadata.index, "comp_1"],
         color=color_by_study[study],
         marker=shape_by_study[study],
-        label=study,
+        label=targets[study]['short_name'],
     )
 ax.set_xlabel(f"PCA 1 ({PCA_by_TPM.rsquare[1]:0.0%})")
 ax.set_ylabel(f"PCA 2 ({PCA_by_TPM.rsquare[2] - PCA_by_TPM.rsquare[1]:0.0%})")
-fig.legend(fontsize = 'x-small', ncol=2)
+lax.legend(*ax.get_legend_handles_labels(), fontsize = 'x-small', ncol=2, borderaxespad=0)
+lax.axis('off')
 fig.savefig(OUT_DIR/f"all_samples_study.TPM.png", dpi=DPI)
 fig.savefig(OUT_DIR/f"all_samples_study.TPM.svg")
 
@@ -75,7 +77,7 @@ fig.savefig(OUT_DIR/f"all_samples_study.TPM.svg")
 # Color by time-of-day
 colors=sample_info.time%24
 
-fig, ax = pylab.subplots(figsize=(12,12))
+fig, ax = pylab.subplots(figsize=(6,6))
 h=ax.scatter(
         PCA_by_TPM.factors["comp_0"],
         PCA_by_TPM.factors["comp_1"],
@@ -88,14 +90,19 @@ fig.savefig(OUT_DIR/f"all_samples_time.TPM.png", dpi=DPI)
 fig.savefig(OUT_DIR/f"all_samples_time.TPM.svg")
 
 
-# Color by study pca_type (paired/stranded/etc)
-fig, ax = pylab.subplots(figsize=(12,12))
-sample_info['study_seq_type'] = sample_info.study.map(study_classification)
-for study, metadata in sample_info.groupby('study_seq_type'):
+# Color by study sequencing type (paired/stranded/etc)
+fig, ax = pylab.subplots(figsize=(6,6), constrained_layout=True)
+#sample_info['study_seq_type'] = sample_info.study.map(study_classification)
+sample_info['study_seq_type'] = sample_info.study.map(lambda x: study_table.loc[targets[x]['short_name'], 'Sequencing Type'])
+print(sample_info.study.unique())
+print(study_table.index.unique())
+print(study_table['Sequencing Type'].value_counts())
+print(sample_info.study_seq_type.value_counts())
+for seq_type, metadata in sample_info.groupby('study_seq_type'):
     ax.scatter(
         PCA_by_TPM.factors.loc[metadata.index, "comp_0"],
         PCA_by_TPM.factors.loc[metadata.index, "comp_1"],
-        label=study,
+        label=seq_type,
     )
 ax.set_xlabel(f"PCA 1 ({PCA_by_TPM.rsquare[1]:0.0%})")
 ax.set_ylabel(f"PCA 2 ({PCA_by_TPM.rsquare[2] - PCA_by_TPM.rsquare[1]:0.0%})")
