@@ -86,7 +86,7 @@ for strictness, periods_ in periods.items():
     for ax, study in zip(axes.flatten(), include_studies):
         period = periods_[study]
         ax.hist(period, bins=bins, color=color_by_strictness[strictness])
-        ax.set_ylabel(format_study_name(study), rotation=0, horizontalalignment="right")
+        ax.set_ylabel(study_info[study]['short_name'], rotation=0, horizontalalignment="right")
 [ax.set_xlabel("Period (hrs)") for ax in axes[-1,:]]
 for ax in axes.flatten()[remove_unplotted]:
     ax.remove()
@@ -101,7 +101,7 @@ for strictness, phases_ in phases.items():
     for ax, study in zip(axes.flatten(), include_studies):
         phase = phases_[study]
         ax.hist(phase, bins=bins, color=color_by_strictness[strictness])
-        ax.set_ylabel(format_study_name(study), rotation=0, horizontalalignment="right")
+        ax.set_ylabel(study_info[study]['short_name'], rotation=0, horizontalalignment="right")
         ax.set_xlim(0,jtk_period)
         ax.set_xticks(numpy.arange(0,jtk_period+1, jtk_period//4))
 [ax.set_xlabel("Phase (hrs)") for ax in axes[-1,:]]
@@ -186,7 +186,8 @@ fig.colorbar(h, ax=axes, label="Phase Density", fraction=0.025)
 fig.colorbar(h3, ax=axes, label="Age (weeks)", fraction=0.025)
 util.legend_from_colormap(
     fig = fig,
-    colormap = {**color_by_sex, **color_by_light},
+    colormap = {k:c for k,c in {**color_by_sex, **color_by_light}.items()
+                    if k != 'unknown'},
 )
 fig.savefig(snakemake.output.phase_heatmap, dpi=DPI)
 fig.savefig(snakemake.output.phase_heatmap_svg)
@@ -198,7 +199,7 @@ for strictness, amplitudes_ in amplitudes.items():
     for ax, study in zip(axes.flatten(), include_studies):
         amplitude = amplitudes_[study]
         ax.hist(amplitude, bins=bins, color=color_by_strictness[strictness])
-        ax.set_ylabel(format_study_name(study), rotation=0, horizontalalignment="right")
+        ax.set_ylabel(study_info[study]['short_name'], rotation=0, horizontalalignment="right")
         ax.set_xscale("log")
 [ax.set_xlabel("Amplitude (hrs)") for ax in axes[-1,:]]
 for ax in axes.flatten()[remove_unplotted]:
