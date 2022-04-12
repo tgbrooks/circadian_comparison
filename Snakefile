@@ -422,6 +422,7 @@ rule plot_PCA:
         outlier_samples = "results/{tissue}/outlier_samples.txt",
         robustness = "results/{tissue}/jtk24/robustness_score.txt",
         study_classification = "results/study_classification.json",
+        study_table = "results/Liver/study_table.txt"
     params:
         studies = select_tissue(studies),
     resources:
