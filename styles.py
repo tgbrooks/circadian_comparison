@@ -12,14 +12,15 @@ shape_by_study = {study: marker[i//20] if not targets[study].get('highlight',Fal
                         for i, study in enumerate(studies)}
 linestyle_by_study = {study: linestyles[i//20] for i, study in enumerate(studies)}
 
+cmap = pylab.get_cmap("tab20")
 color_by_sex = {
-        "M": (0.12156862745098039, 0.4666666666666667, 0.7058823529411765, 1.0),
-        "F": (1.0, 0.4980392156862745, 0.054901960784313725, 1.0),
+        "M": cmap(0),
+        "F": cmap(1),
         "unknown": (0.5, 0.5, 0.5, 1.0),
 }
 color_by_light = {
-        "LD": (0.8392156862745098, 0.15294117647058825, 0.1568627450980392, 1.0),
-        "DD": (0.5803921568627451, 0.403921568627451, 0.7411764705882353, 1.0),
+        "DD": cmap(3),
+        "LD": cmap(2),
         "unknown": (0.5,0.5,0.5, 1.0),
 }
 
