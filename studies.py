@@ -212,8 +212,8 @@ targets = {
         "short_name": "Guan20",
         "sex": "M",
         "light": "LD",
-        "age_low": float("NaN"),
-        "age_high": float("NaN"),
+        "age_low": 8,
+        "age_high": 12,
     },
 
     "Koronowski19_F": {
@@ -343,10 +343,10 @@ targets = {
         "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns]['time point'])),
         "tissue": "Liver",
         "seq":  "RiboZero",
-        "sex": "unknown",
+        "sex": "M",
         "light": "LD",
-        "age_low": float("NaN"),
-        "age_high": float("NaN"),
+        "age_low": 14,
+        "age_high": 14,
     },
 
     "Cajan16": {
@@ -651,7 +651,7 @@ targets = {
         "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns]['zeitgeber'])),
         "tissue": "Liver",
         "seq":  "RiboZero",
-        "sex": "unknown",
+        "sex": "M",
         "light": "LD",
         "age_low": 16,
         "age_high": 24,
