@@ -57,8 +57,8 @@ tpm = pandas.read_csv(snakemake.input.tpm, sep="\t", index_col=[0,1])
 samples = pandas.read_csv(snakemake.input.sample_info, sep="\t", index_col=0)
 
 # Plot certain genes for QC
-genes_ID = ["ENSMUSG00000086503", "ENSMUSG00000069036", "ENSMUSG00000048376", "ENSMUSG00000029368", "ENSMUSG00000064337", "ENSMUSG00000064339", "ENSMUSG00000064336"]
-genes_symbol = ["Xist", "Sry", "F2r", "Alb", "mt-Rnr1", "mt-Rnr2", "mt-Tf"]
+genes_ID = ["ENSMUSG00000086503", "ENSMUSG00000069036", "ENSMUSG00000048376", "ENSMUSG00000029368", "ENSMUSG00000064337", "ENSMUSG00000064339", "ENSMUSG00000064336", "ENSMUSG00000054626", "ENSMUSG00000000567", "ENSMUSG00000025332"]
+genes_symbol = ["Xist", "Sry", "F2r", "Alb", "mt-Rnr1", "mt-Rnr2", "mt-Tf", "Xlr", "Sox9", "Kdm5c"]
 for gene, name in zip(genes_ID, genes_symbol):
     fig, ax = pylab.subplots(figsize=(0.7*N_studies+0.7,4))
     expression_data = []

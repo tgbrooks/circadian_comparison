@@ -326,6 +326,9 @@ rule plot_qc:
         ENSMUSG00000064337 = "results/{tissue}/qc/mtRnr1_expression.png",
         ENSMUSG00000064339 = "results/{tissue}/qc/mtRnr2_expression.png",
         ENSMUSG00000064336 = "results/{tissue}/qc/mtTf_expression.png",
+        ENSMUSG00000054626 = "results/{tissue}/qc/Xlr_expression.png",
+        ENSMUSG00000000567 = "results/{tissue}/qc/Sox9_expression.png",
+        ENSMUSG00000025332 = "results/{tissue}/qc/Kdm5c_expression.png",
     resources:
         mem_mb = 4000,
     script:
