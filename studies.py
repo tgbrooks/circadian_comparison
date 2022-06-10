@@ -35,7 +35,7 @@ targets = {
         "age_high": 24,
         "light": "DD",
         "D_time": 36,
-        "note": "tamoxifen treated",
+        "note": "Bmal1 f/f; tamoxifen treated",
         "PMID": ['26843191'],
     },
 
@@ -135,6 +135,7 @@ targets = {
         "D_time": 24,
         "age_low": 8,
         "age_high": 12,
+        "note": "XBP1 flox",
     },
 
     "Morton20_Liver": {
@@ -215,6 +216,7 @@ targets = {
         "light": "LD",
         "age_low": 8,
         "age_high": 12,
+        "note": "Rev-erb alpha fl/fl Rev-erb beta fl/fl",
     },
 
     "Koronowski19_F": {
@@ -228,6 +230,7 @@ targets = {
         "light": "LD",
         "age_low": 8,
         "age_high": 12,
+        "note": "Alfp-Cre -/tg",
     },
 
     "Meng20": {
@@ -268,6 +271,7 @@ targets = {
         "age_low": 16,
         "age_high": 24,
         "D_time": 36,
+        "note": "Bmal1 fx/fx",
     },
 
     "Kinouchi18_Liver": {
@@ -406,6 +410,7 @@ targets = {
         "D_time": 1008,
         "age_low": 6,
         "age_high": 6,
+        "note": "six weeks of DD",
     },
 
     "Du14": {
@@ -418,6 +423,7 @@ targets = {
         "light": "LD",
         "age_low": 12,
         "age_high": 24,
+        "note": "Alb Cr-ERT2; tamoxifen treated",
     },
 
     "Fader19": {
@@ -431,6 +437,7 @@ targets = {
         "light": "LD",
         "age_low": 9,
         "age_high": 10,
+        "note": "sesame oil gavage",
     },
 
     "Gaucher19_Chronic_Cntrl": {
@@ -439,7 +446,7 @@ targets = {
         "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns]['title'])),
         "tissue": "Liver",
         "seq": "PolyA",
-        "short_name": "Gaucher19A",
+        "short_name": "Gaucher19",
         "sex": "M",
         "light": "LD",
         "age_low": 9,
