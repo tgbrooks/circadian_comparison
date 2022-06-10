@@ -62,7 +62,8 @@ rule all:
         "results/Liver/spline_fit_perm/1/summary.txt",
         "results/Liver/spline_fit_perm/1/stats/",
         "results/Liver/stable_genes/stable_gene_list.txt",
-        "results/Liver/spline_fit/phase_variability/phase_std_distribution.png"
+        "results/Liver/spline_fit/phase_variability/phase_std_distribution.png",
+        "results/Liver/supplemental/",
 
 rule get_series_matrix:
     output:
@@ -654,3 +655,22 @@ rule assess_phase_variability:
         phase_std_distribution = "results/{tissue}/spline_fit/phase_variability/phase_std_distribution.png"
     script:
         "scripts/assess_phase_variability.py"
+
+rule prepare_supplemental:
+    input:
+        jtk = "results/{tissue}/jtk24.results.txt",
+        robustness_score = "results/{tissue}/jtk24/robustness_score.txt",
+        sample_info = "results/{tissue}/all_samples_info.txt",
+        study_table = "results/{tissue}/study_table.txt",
+        tpm = "results/{tissue}/tpm_all_samples.txt",
+        num_reads = "results/{tissue}/num_reads_all_samples.txt",
+        outliers = "results/{tissue}/outlier_samples.txt",
+        sim_summary = "results/{tissue}/spline_fit/summary.full.txt",
+        sim_curves_fit = "results/{tissue}/spline_fit/curves_fit.txt",
+        sim_curves_pstd = "results/{tissue}/spline_fit/curves_pstd.txt",
+        sim_re = "results/{tissue}/spline_fit/re.txt",
+        sim_re_structure = "results/{tissue}/spline_fit/re_structure.txt",
+    output:
+        outdir = directory("results/{tissue}/supplemental/")
+    script:
+        "scripts/prepare_supplemental.py"
