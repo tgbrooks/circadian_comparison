@@ -101,7 +101,9 @@ asymmetric = pandas.Series({
     gene:is_asymmetric(curves.loc[gene].values, curves_pstd.loc[gene].values)
         for gene in curves.index
         if summary.loc[gene].is_rhythmic # non-rhythmic genes are not asymmetric
-})
+},
+    dtype=float
+)
 asymmetric.to_csv(out_dir / "asymmetric.txt", sep="\t")
     
 
