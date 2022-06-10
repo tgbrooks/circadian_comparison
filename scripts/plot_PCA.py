@@ -58,7 +58,8 @@ PCA_by_TPM= sm.PCA(log_data.T, ncomp=2, method="nipals")
 
 # Color by study
 fig, (ax,lax) = pylab.subplots(figsize=(10,6), constrained_layout=True, ncols=2, gridspec_kw={"width_ratios":[2,1]})
-for study, metadata in sample_info.groupby('study'):
+sample_info['short_name'] = sample_info.study.map(lambda x: targets[x]['short_name'])
+for study, metadata in sample_info.sort_values(by="short_name").groupby('study', sort=False):
     ax.scatter(
         PCA_by_TPM.factors.loc[metadata.index, "comp_0"],
         PCA_by_TPM.factors.loc[metadata.index, "comp_1"],
