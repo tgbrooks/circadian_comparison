@@ -266,15 +266,29 @@ rule classify_studies:
     script:
         "scripts/classify_studies.py"
 
+rule prep_jtk:
+    input:
+        tpm = "data/{study}/expression.tpm.txt",
+        sample_data = "data/{study}/sample_data.txt",
+        outliers = lambda wildcards: f"results/{targets[wildcards.study]['tissue']}/outlier_samples.txt",
+    output:
+        tpm = temp("data/{study}/expression.tpm.for_JTK.txt")
+    run:
+        # Select just the non-outlier samples and put in a file so JTK can read it
+        outlier_samples = [x.strip() for x in open(input.outliers).readlines()]
+        tpm = pandas.read_csv(input.tpm, sep="\t", index_col=0)
+        samples = tpm.columns
+        tpm_selected = tpm[[sample for sample in samples if sample not in outlier_samples]]
+        tpm_selected.to_csv(output.tpm, sep="\t")
+
 rule run_jtk:
     input:
-        "data/{study}/expression.tpm.txt",
-        "data/{study}/expression.num_reads.txt",
-        "data/{study}/sample_data.txt"
+        "data/{study}/expression.tpm.for_JTK.txt",
+        "data/{study}/sample_data.txt",
     output:
-        "data/{study}/jtk{period}/JTKresult_expression.tpm.txt"
+        "data/{study}/jtk{period}/JTKresult_expression.tpm.for_JTK.txt"
     params:
-        timepoints = lambda wildcards: sample_timepoints(wildcards.study),
+        timepoints = lambda wildcards: sample_timepoints(wildcards.study, drop_outliers=True),
         out_dir = "data/{study}/jtk{period}/",
         period = lambda wildcards: 'default' if wildcards.period == '' else wildcards.period
     script:
@@ -282,7 +296,7 @@ rule run_jtk:
 
 rule process_jtk:
     input:
-        "data/{study}/jtk{period}/JTKresult_expression.tpm.txt",
+        "data/{study}/jtk{period}/JTKresult_expression.tpm.for_JTK.txt",
         "data/{study}/expression.num_reads.txt",
     output:
         "data/{study}/jtk{period}.results.txt",

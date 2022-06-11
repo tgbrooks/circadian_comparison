@@ -10,11 +10,23 @@ def hirako18_time(times):
     # Times are in clock time with ZT0 = 7:00am, so 0 Hour (midnight) is at ZT17
     return [int(re.search("(\d+)", time).groups()[0])+17 for time in times]
 
-def sample_timepoints(study):
+def sample_timepoints(study, drop_outliers=False):
     sample_data = pandas.read_csv(f"data/{study}/sample_data.txt", sep="\t", index_col="geo_accession")
     expression_table = pandas.read_csv(f"data/{study}/expression.tpm.txt", sep="\t", index_col=0, nrows=5)
     times = targets[study]["time"](sample_data, expression_table)
+    if drop_outliers:
+        outlier_samples = [x.strip() for x in open(f"results/{targets[study]['tissue']}/outlier_samples.txt").readlines()]
+        return list(time for time, sample in zip(times, expression_table.columns) if sample not in outlier_samples)
     return times
+
+def study_samples(study):
+    expression_table = pandas.read_csv(f"data/{study}/expression.tpm.txt", sep="\t", index_col=0, nrows=5)
+    return expression_table.columns
+
+def study_samples_is_outliers(stuy, tissue):
+    samples = study_samples(study)
+    outliers = [x.strip() for x in open(f"results/{tissue}/outlier_samples.txt", "r").read().strip().splitlines()]
+    return [(s in outliers) for s in samples]
 
 targets = {
     "Schwartz21": {

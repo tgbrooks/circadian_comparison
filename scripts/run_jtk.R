@@ -6,6 +6,7 @@ output_dir <- snakemake@params[['out_dir']]
 
 timepoints <- snakemake@params[['timepoints']]
 period <- snakemake@params[['period']]
+outliers <- snakemake@params[['outliers']]
 
 print("Running MetaCycle JTK with following parameters:")
 print(input_file)
@@ -25,7 +26,7 @@ if (period == "default") {
     if ((period == 8) & (num_timepoints < 6)) {
         # Some studies have too few timepoints to run period 8
         # we output all non-significant for them
-        output_file <- paste(output_dir, "/JTKresult_expression.tpm.txt", sep='');
+        output_file <- paste(output_dir, "/JTKresult_expression.tpm.for_JTK.txt", sep='');
         input <- read_tsv(input_file);
         output <- tibble(CycID = input$Name, BH.Q = 1, ADJ.P = 1, PER = 0, LAG = 0, AMP = 0);
         print(output)
