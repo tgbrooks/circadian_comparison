@@ -6,7 +6,7 @@ backcall==0.2.0
 binaryornot==0.4.4
 certifi==2021.5.30
 chardet==4.0.0
--e git+git@github.com:tgbrooks/circadian_comparison.git@6d3ceb01c8b1bfe6843c90c91faaa5fe0df54694#egg=circadian_controls
+-e git+git@github.com:tgbrooks/circadian_comparison.git@2ceeae1b15b1cd7ad437ca2ed711b80fb067a570#egg=circadian_controls
 click==8.0.1
 ConfigArgParse==1.5
 connection-pool==0.0.3
@@ -58,6 +58,7 @@ ratelimiter==1.2.0.post0
 requests==2.25.1
 scikit-learn==0.24.2
 scipy==1.7.0
+seaborn==0.11.2
 six==1.16.0
 sklearn==0.0
 smart-open==5.1.0
