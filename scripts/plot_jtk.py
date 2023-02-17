@@ -15,6 +15,9 @@ from studies import targets as study_info
 studies = snakemake.params.studies
 N_studies = len(studies)
 
+robustness_score = pandas.read_csv(snakemake.input.robustness_score, sep="\t", index_col=0)['0']
+highly_robust_genes = robustness_score.index[robustness_score >= 30]
+
 jtk_period = snakemake.wildcards.period
 if jtk_period == '':
     jtk_period = 24
@@ -47,6 +50,7 @@ breakpoints = numpy.logspace(-4,0,501) # q-values to compute for
 breakdowns = {}
 periods = {strictness:{} for strictness in Q_CUTOFFS.keys()}
 phases = {strictness:{} for strictness in Q_CUTOFFS.keys()}
+robust_genes_phases = {}
 amplitudes = {strictness:{} for strictness in Q_CUTOFFS.keys()}
 for study, jtkfile in zip(studies, snakemake.input.jtk):
     jtk = pandas.read_csv(jtkfile, sep="\t", index_col=0)
@@ -57,6 +61,8 @@ for study, jtkfile in zip(studies, snakemake.input.jtk):
         periods[strictness][study] = significant['PER']
         phases[strictness][study] = significant['LAG']
         amplitudes[strictness][study] = significant['AMP']
+
+        robust_genes_phases[study] = jtk.loc[jtk.index.isin(highly_robust_genes), 'LAG']
 
 
 #Q-value breakdowns
@@ -112,85 +118,85 @@ fig.tight_layout()
 fig.savefig(snakemake.output.phases, dpi=DPI)
 
 # Heatmap of phases
-plot_studies = sorted(studies, key=lambda x: study_info[x]['short_name'])
-fig, axes = pylab.subplots(
-        figsize=(10,10),
-        sharey=True,
-        ncols=4,
-        gridspec_kw=dict(
-            width_ratios = (2, 2, 1, len(bins)-1),
-        ),
-        constrained_layout=True
-)
-(label_ax, age_ax, num_sig_ax, main_ax) = axes
-density_by_study = numpy.zeros(shape=(len(plot_studies), len(bins)-1))
-num_sig_by_study = numpy.zeros((len(plot_studies),1))
-for i, study in enumerate(plot_studies):
-    phase = phases['loose'][study]
-    num_sig_by_study[i,0] = len(phase)
-    if len(phase) < 10:
-        continue
-    #counts, edges = numpy.histogram(phase, bins)
-    #density_by_study[i,:]  = counts / sum(counts)
-    #num_sig_by_study[i,0] = sum(counts)
-    kde = scipy.stats.gaussian_kde(phase.values, bw_method=0.3)
-    vals = kde(bins[:-1]+0.5)# * len(phase)
-    vals /= max(vals) # Maximum is 1
-    density_by_study[i,:] = vals
-cmap = matplotlib.cm.get_cmap().copy()
-#cmap.set_bad(cmap(0))
-# main values
-h = main_ax.imshow(
-    density_by_study,
-    cmap = cmap,
-    #norm = matplotlib.colors.LogNorm(vmin=1),
-)
-main_ax.set_xlim(-0.5, len(bins)-1-0.5)
-time_labels = numpy.arange(0, jtk_period+1, jtk_period//4)
-main_ax.set_xticks(time_labels-0.5)
-main_ax.set_xticklabels([str(x) for x in time_labels])
-main_ax.set_xlabel("Phase (hrs)")
-# study info values
-label_ax.imshow(
-    [[
-        color_by_sex[study_info[study]['sex']],
-        color_by_light[study_info[study]['light']],
-        ]
-        for study in plot_studies],
-)
-label_ax.set_xticks([0,1])
-label_ax.set_xticklabels(['sex', 'light'], rotation=90)
-label_ax.set_yticks(numpy.arange(len(plot_studies)))
-label_ax.set_yticklabels([study_info[study]['short_name'] for study in plot_studies])
-# Age axis
-h3 = age_ax.imshow(
-    [[
-        study_info[study]['age_low'],
-        study_info[study]['age_high'],
-    ] for study in plot_studies],
-    cmap = "plasma",
-)
-age_ax.set_xticks([0,1])
-age_ax.set_xticklabels(['age low', 'age high'], rotation=90)
-# Num sig axis
-h2 = num_sig_ax.imshow(
-        num_sig_by_study,
-        cmap = "inferno",
-        norm = matplotlib.colors.SymLogNorm(linthresh=1),
-)
-num_sig_ax.set_xticks([0])
-num_sig_ax.set_xticklabels(['num. rhythmic'], rotation=90)
-#Colorbars + legend
-fig.colorbar(h2, ax=axes, label="Num. Rhythmic", fraction=0.025)
-fig.colorbar(h, ax=axes, label="Phase Density", fraction=0.025)
-fig.colorbar(h3, ax=axes, label="Age (weeks)", fraction=0.025)
-util.legend_from_colormap(
-    fig = fig,
-    colormap = {k:c for k,c in {**color_by_sex, **color_by_light}.items()
-                    if k != 'unknown'},
-)
-fig.savefig(snakemake.output.phase_heatmap, dpi=DPI)
-fig.savefig(snakemake.output.phase_heatmap_svg)
+phase_types = {
+    'loose': phases['loose'],
+    'robust': robust_genes_phases,
+}
+for phase_type, phases_of_type in phase_types.items():
+    plot_studies = sorted(studies, key=lambda x: study_info[x]['short_name'])
+    fig, axes = pylab.subplots(
+            figsize=(10,10),
+            sharey=True,
+            ncols=4,
+            gridspec_kw=dict(
+                width_ratios = (2, 2, 1, len(bins)-1),
+            ),
+            constrained_layout=True
+    )
+    (label_ax, age_ax, num_sig_ax, main_ax) = axes
+    density_by_study = numpy.zeros(shape=(len(plot_studies), len(bins)-1))
+    num_sig_by_study = numpy.zeros((len(plot_studies),1))
+    for i, study in enumerate(plot_studies):
+        phase = phases_of_type[study]
+        num_sig_by_study[i,0] = len(phase)
+        if len(phase) < 10:
+            continue
+        kde = scipy.stats.gaussian_kde(phase.values, bw_method=0.3)
+        vals = kde(bins[:-1]+0.5)
+        vals /= max(vals) # Maximum is 1
+        density_by_study[i,:] = vals
+    cmap = matplotlib.cm.get_cmap().copy()
+    # main values
+    h = main_ax.imshow(
+        density_by_study,
+        cmap = cmap,
+    )
+    main_ax.set_xlim(-0.5, len(bins)-1-0.5)
+    time_labels = numpy.arange(0, jtk_period+1, jtk_period//4)
+    main_ax.set_xticks(time_labels-0.5)
+    main_ax.set_xticklabels([str(x) for x in time_labels])
+    main_ax.set_xlabel("Phase (hrs)")
+    # study info values
+    label_ax.imshow(
+        [[
+            color_by_sex[study_info[study]['sex']],
+            color_by_light[study_info[study]['light']],
+            ]
+            for study in plot_studies],
+    )
+    label_ax.set_xticks([0,1])
+    label_ax.set_xticklabels(['sex', 'light'], rotation=90)
+    label_ax.set_yticks(numpy.arange(len(plot_studies)))
+    label_ax.set_yticklabels([study_info[study]['short_name'] for study in plot_studies])
+    # Age axis
+    h3 = age_ax.imshow(
+        [[
+            study_info[study]['age_low'],
+            study_info[study]['age_high'],
+        ] for study in plot_studies],
+        cmap = "plasma",
+    )
+    age_ax.set_xticks([0,1])
+    age_ax.set_xticklabels(['age low', 'age high'], rotation=90)
+    # Num sig axis
+    h2 = num_sig_ax.imshow(
+            num_sig_by_study,
+            cmap = "inferno",
+            norm = matplotlib.colors.SymLogNorm(linthresh=1),
+    )
+    num_sig_ax.set_xticks([0])
+    num_sig_ax.set_xticklabels(['num. rhythmic'], rotation=90)
+    #Colorbars + legend
+    fig.colorbar(h2, ax=axes, label="Num. Rhythmic", fraction=0.025)
+    fig.colorbar(h, ax=axes, label="Phase Density", fraction=0.025)
+    fig.colorbar(h3, ax=axes, label="Age (weeks)", fraction=0.025)
+    util.legend_from_colormap(
+        fig = fig,
+        colormap = {k:c for k,c in {**color_by_sex, **color_by_light}.items()
+                        if k != 'unknown'},
+    )
+    fig.savefig(f"results/{snakemake.wildcards.tissue}/jtk{snakemake.wildcards.period}/phases.heatmap.{phase_type}.png", dpi=DPI)
+    fig.savefig(f"results/{snakemake.wildcards.tissue}/jtk{snakemake.wildcards.period}/phases.heatmap.{phase_type}.svg")
 
 # Histogram of amplitudes
 fig, axes = pylab.subplots(figsize=(1+5*N_COLUMNS,0.7+0.7*N_ROWS), nrows=N_ROWS, ncols=N_COLUMNS, sharex=True, squeeze=False)

@@ -36,11 +36,35 @@ for study1 in studies:
 results_df = pandas.DataFrame(results)
 results_df.to_csv(snakemake.output.num_common_genes, sep="\t")
 
+# Overlaps by q-value / p-value
+jtk = pandas.read_csv(snakemake.input.jtk_results, sep="\t")
+jtk['q_significant'] = jtk.qvalue < 0.05
+jtk['p_significant'] = jtk['ADJ.P'] < 0.05
+qvalues_overlap = []
+for studyA, dataA in jtk.groupby("study"):
+    for studyB, dataB in jtk.groupby("study"):
+        joined = pandas.merge(
+            dataA,
+            dataB,
+            left_on="ID",
+            right_on="ID",
+            suffixes=("_A", "_B")
+        )
+        qvalues_overlap.append({
+            "A": studyA,
+            "B": studyB,
+            "A_q_significant": dataA.q_significant.sum(),
+            "A_q_B_p_significant": (joined.q_significant_A & joined.p_significant_B).sum(),
+            "A_q_B_q_significant": (joined.q_significant_A & joined.q_significant_B).sum(),
+        })
+qvalues_overlap_df = pandas.DataFrame(qvalues_overlap)
+qvalues_overlap_df.to_csv(snakemake.output.q_values_overlaps, sep="\t")
+
 # Plot these pair-wise overlaps
 study_clustering = scipy.cluster.hierarchy.linkage(results_df, optimal_ordering=True)
 study_ordering = scipy.cluster.hierarchy.leaves_list(study_clustering)
 study_order = results_df.index[study_ordering]
-fig, ax = pylab.subplots(figsize=(10,10))
+fig, ax = pylab.subplots(figsize=(8,8))
 h = ax.imshow(results_df.loc[study_order,study_order], vmin=0, vmax=n_genes)
 ax.xaxis.tick_top()
 ax.set_xticks(numpy.arange(len(study_order)))
@@ -50,6 +74,32 @@ ax.set_yticklabels([targets[x]['short_name'] for x in study_order])
 fig.colorbar(h, fraction=0.03, label="Overlap (# genes)")
 fig.tight_layout()
 fig.savefig(snakemake.output.num_common_genes_heatmap, dpi=DPI)
+
+# Plot these pair-wise overlaps of q-values
+qvalue_results = qvalues_overlap_df.pivot("A", "B", "A_q_B_q_significant")
+fig, ax = pylab.subplots(figsize=(8,8))
+h = ax.imshow(qvalue_results.loc[study_order,study_order], vmin=0, vmax=n_genes)
+ax.xaxis.tick_top()
+ax.set_xticks(numpy.arange(len(study_order)))
+ax.set_xticklabels([targets[x]['short_name'] for x in study_order], rotation=90)
+ax.set_yticks(numpy.arange(len(study_order)))
+ax.set_yticklabels([targets[x]['short_name'] for x in study_order])
+fig.colorbar(h, fraction=0.03, label="Overlap (# genes)")
+fig.tight_layout()
+fig.savefig(snakemake.output.num_qvalue_overlap_heatmap, dpi=DPI)
+
+# Plot these pair-wise overlaps of q-values vs p-values
+qvalue_results = qvalues_overlap_df.pivot("A", "B", "A_q_B_p_significant")
+fig, ax = pylab.subplots(figsize=(8,8))
+h = ax.imshow(qvalue_results.loc[study_order,study_order], vmin=0, vmax=n_genes)
+ax.xaxis.tick_top()
+ax.set_xticks(numpy.arange(len(study_order)))
+ax.set_xticklabels([targets[x]['short_name'] for x in study_order], rotation=90)
+ax.set_yticks(numpy.arange(len(study_order)))
+ax.set_yticklabels([targets[x]['short_name'] for x in study_order])
+fig.colorbar(h, fraction=0.03, label="Overlap (# genes)")
+fig.tight_layout()
+fig.savefig(snakemake.output.num_q_p_value_overlap_heatmap, dpi=DPI)
 
 # Compute the robustness scores: number of studies where found significant
 p_value_cutoff = 0.05

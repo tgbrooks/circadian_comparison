@@ -30,5 +30,5 @@ info['stable'] = (info.min_mean_tpm > 1) & (info.max_rel_std < 0.5) & (info.min_
 print(f"Identified {info.stable.sum()} stable genes out of {len(info)}")
 print(f"20 sampled stable genes:\n{info.query('stable').sample(20)}")
 
-pandas.Series(info.query('stable').index).to_csv(snakemake.output.stable_gene_list, sep="\t")
+pandas.Series(info.query('stable').index).to_csv(snakemake.output.stable_gene_list, sep="\t", index=None, header=None)
 info.sort_index().to_csv(snakemake.output.stable_table, sep="\t")

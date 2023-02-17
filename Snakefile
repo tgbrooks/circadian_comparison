@@ -59,8 +59,8 @@ rule all:
         #"results/Liver/spline_fit_perm/1/batches/1.summary.txt",
         "results/Liver/spline_fit/tsne.png",
         "results/Liver/spline_fit/stats/",
-        "results/Liver/spline_fit_perm/1/summary.txt",
-        "results/Liver/spline_fit_perm/1/stats/",
+        #"results/Liver/spline_fit_perm/1/summary.txt",
+        #"results/Liver/spline_fit_perm/1/stats/",
         "results/Liver/stable_genes/stable_gene_list.txt",
         "results/Liver/spline_fit/phase_variability/phase_std_distribution.png",
         "results/Liver/supplemental/",
@@ -387,6 +387,7 @@ rule plot_jtk:
         jtk = lambda wildcards: expand("data/{study}/jtk{period}.results.txt",
                                         study=studies_by_tissue(wildcards.tissue),
                                         period=wildcards.period),
+        robustness_score = "results/{tissue}/jtk{period}/robustness_score.txt",
     params:
         studies = select_tissue(studies),
     output:
@@ -394,20 +395,26 @@ rule plot_jtk:
         periods = "results/{tissue}/jtk{period}/periods.png",
         amplitudes = "results/{tissue}/jtk{period}/amplitudes.png",
         phases = "results/{tissue}/jtk{period}/phases.png",
-        phase_heatmap = "results/{tissue}/jtk{period}/phases.heatmap.png",
-        phase_heatmap_svg = "results/{tissue}/jtk{period}/phases.heatmap.svg",
+        phase_heatmap = "results/{tissue}/jtk{period}/phases.heatmap.loose.png",
+        phase_heatmap_robust = "results/{tissue}/jtk{period}/phases.heatmap.robust.png",
+        phase_heatmap_svg = "results/{tissue}/jtk{period}/phases.heatmap.loose.svg",
+        phase_heatmap_svg_robust = "results/{tissue}/jtk{period}/phases.heatmap.robust.svg",
     script:
         "scripts/plot_jtk.py"
 
 rule plot_overlapped_genes:
     input:
         jtk = lambda wildcards: expand("data/{study}/jtk{period}.results.txt", study=studies_by_tissue(wildcards.tissue), period=wildcards.period),
+        jtk_results = "results/{tissue}/jtk{period}.results.txt",
         tpm = lambda wildcards: expand("data/{study}/expression.tpm.txt", study=studies_by_tissue(wildcards.tissue)),
     params:
         studies = select_tissue(studies),
     output:
         num_common_genes = "results/{tissue}/jtk{period}/num_common_genes.txt",
+        q_values_overlaps = "results/{tissue}/jtk{period}/q_values_overlaps.txt",
         num_common_genes_heatmap = "results/{tissue}/jtk{period}/num_common_genes_heatmap.png",
+        num_qvalue_overlap_heatmap = "results/{tissue}/jtk{period}/num_qvalue_overlap_heatmap.png",
+        num_q_p_value_overlap_heatmap = "results/{tissue}/jtk{period}/num_q_pvalue_overlap_heatmap.png",
         common_genes_pvalue = "results/{tissue}/jtk{period}/common_genes_pvalue.txt",
         robustness_score = "results/{tissue}/jtk{period}/robustness_score.txt",
         heatmap = "results/{tissue}/jtk{period}/common_genes_heatmap.png",
