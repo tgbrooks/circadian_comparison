@@ -11,6 +11,8 @@ tissues = ["Liver"]
 SPLINE_FIT_N_BATCHES = 400
 # Require at least this number of mean reads per gene to include in q-value computations
 MEAN_READCOUNT_THRESHOLD = 2
+WORKING_DIR = "/project/itmatlab/for_tom/circadian_controls/"
+BOOTEJTK_SIF = "~/.apptainer/images/bootejtk_latest.sif"
 
 wildcard_constraints:
     sample = "GSM(\d+)",
@@ -23,6 +25,7 @@ rule all:
         expand("data/{study}/sample_data.txt", study=targets.keys()),
         expand("data/{study}/label_expression.tpm.txt", study=studies),
         expand("data/{study}/jtk.results.txt", study=studies),
+        expand("data/{study}/bootejtk/expression.tpm.for_BooteJTK_Vash_OUT_boot25-rep2_GammaP.txt", study=targets.keys()),
         # All tissue-level files:
         expand("results/{tissue}/{file}",
             tissue = tissues,
@@ -320,6 +323,40 @@ rule process_jtk:
         jtk['qvalue'] = 1 # Dropped genes get q=1
         jtk.loc[selected, 'qvalue'] = qs
         jtk.to_csv(output[0], sep="\t")
+
+rule prep_bootejk:
+    input:
+        tpm = "data/{study}/expression.tpm.txt",
+        sample_data = "data/{study}/sample_data.txt",
+        outliers = lambda wildcards: f"results/{targets[wildcards.study]['tissue']}/outlier_samples.txt",
+    output:
+        tpm = temp("data/{study}/bootejtk/expression.tpm.for_BooteJTK.txt",)
+    params:
+        timepoints = lambda wildcards: sample_timepoints(wildcards.study, drop_outliers=True),
+    run:
+        # Select just the non-outlier samples and put in a file so BooteJTK can read it
+        outlier_samples = [x.strip() for x in open(input.outliers).readlines()]
+        tpm = pandas.read_csv(input.tpm, sep="\t", index_col=0)
+        samples = tpm.columns
+        tpm_selected = tpm[[sample for sample in samples if sample not in outlier_samples]]
+        tpm_selected.index.name = "#"
+        sample_data = pandas.read_csv(input.sample_data, sep="\t", index_col=0)
+        tpm_selected.columns = [f"ZT{time}" for time in params.timepoints]
+        tpm_selected.to_csv(output.tpm, sep="\t")
+
+
+def all_unique(x):
+ return len(set(x)) == len(x)
+rule run_bootejtk:
+    input:
+        "data/{study}/bootejtk/expression.tpm.for_BooteJTK.txt",
+    output:
+        "data/{study}/bootejtk/expression.tpm.for_BooteJTK_Vash_OUT_boot25-rep2_GammaP.txt",
+        "data/{study}/bootejtk/expression.tpm.for_BooteJTK_Vash_OUT_boot25-rep2.txt"
+    params:
+        no_reps = lambda wildcards: '-U' if all_unique(sample_timepoints(wildcards.study, drop_outliers=True)) else ''
+    shell:
+        "apptainer run --bind {WORKING_DIR} {BOOTEJTK_SIF} /BooteJTK/BooteJTK-CalcP.py -f {input} -p /BooteJTK/ref_files/period24.txt -s /BooteJTK/ref_files/phases_00-22_by2.txt -a /BooteJTK/ref_files/asymmetries_02-22_by2.txt -z 25 -r 2 -R {params.no_reps} -x OUT"
 
 rule plot_qc:
     input:

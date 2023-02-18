@@ -29,10 +29,10 @@ def study_samples_is_outliers(stuy, tissue):
     return [(s in outliers) for s in samples]
 
 targets = {
-    "Schwartz21": {
-        "GSE": "GSE165198",
-        "sample_selector": lambda x: True,
-    },
+    #"Schwartz21": {
+    #    "GSE": "GSE165198",
+    #    "sample_selector": lambda x: True,
+    #},
 
     #### LIVER ####
     "Yang16A_M": {
@@ -192,14 +192,14 @@ targets = {
         "note": "night-restricted feeding"
     },
 
-    "Koike12_RNAseq": {
-        "GSE": "GSE39978",
-        "sample_selector": lambda x: x["genotype/variation"] == "wild-type",
-        "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns].time)),
-        # NOTE: this study has SOLiD data, not compatible with Illumina data. Would need another way to align
-        "short_name": "Koike12",
-        "seq": "SOLiD",
-    },
+    #"Koike12_RNAseq": {
+    #    "GSE": "GSE39978",
+    #    "sample_selector": lambda x: x["genotype/variation"] == "wild-type",
+    #    "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns].time)),
+    #    # NOTE: this study has SOLiD data, not compatible with Illumina data. Would need another way to align
+    #    "short_name": "Koike12",
+    #    "seq": "SOLiD",
+    #},
 
     "Manella21_Liver": {
         "GSE": "GSE159135",
