@@ -353,6 +353,8 @@ rule run_bootejtk:
     output:
         "data/{study}/bootejtk/expression.tpm.for_BooteJTK_Vash_OUT_boot25-rep2_GammaP.txt",
         "data/{study}/bootejtk/expression.tpm.for_BooteJTK_Vash_OUT_boot25-rep2.txt"
+    resources:
+        mem_mb = 6_000,
     params:
         no_reps = lambda wildcards: '-U' if all_unique(sample_timepoints(wildcards.study, drop_outliers=True)) else ''
     shell:
