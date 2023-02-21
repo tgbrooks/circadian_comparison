@@ -25,7 +25,7 @@ rule all:
         expand("data/{study}/sample_data.txt", study=targets.keys()),
         expand("data/{study}/label_expression.tpm.txt", study=studies),
         expand("data/{study}/jtk.results.txt", study=studies),
-        expand("data/{study}/bootejtk/expression.tpm.for_BooteJTK_Vash_OUT_boot25-rep2_GammaP.txt", study=targets.keys()),
+        expand("data/{study}/bootejtk/results.txt", study=targets.keys()),
         # All tissue-level files:
         expand("results/{tissue}/{file}",
             tissue = tissues,
@@ -351,14 +351,15 @@ rule run_bootejtk:
     input:
         "data/{study}/bootejtk/expression.tpm.for_BooteJTK.txt",
     output:
-        "data/{study}/bootejtk/expression.tpm.for_BooteJTK_Vash_OUT_boot25-rep2_GammaP.txt",
-        "data/{study}/bootejtk/expression.tpm.for_BooteJTK_Vash_OUT_boot25-rep2.txt"
+        "data/{study}/bootejtk/results.txt",
     resources:
         mem_mb = 6_000,
     params:
-        no_reps = lambda wildcards: '-U' if all_unique(sample_timepoints(wildcards.study, drop_outliers=True)) else ''
+        num_reps = lambda wildcards: '1' if all_unique(sample_timepoints(wildcards.study, drop_outliers=True)) else '2'
     shell:
-        "apptainer run --bind {WORKING_DIR} {BOOTEJTK_SIF} /BooteJTK/BooteJTK-CalcP.py -f {input} -p /BooteJTK/ref_files/period24.txt -s /BooteJTK/ref_files/phases_00-22_by2.txt -a /BooteJTK/ref_files/asymmetries_02-22_by2.txt -z 25 -r 2 -R {params.no_reps} -x OUT"
+        # Note that the output file name depends upon the number of replicates, which has to vary from one study to the next. Therefore
+        # we copy the output to a standardized output name
+        "apptainer run --bind {WORKING_DIR} {BOOTEJTK_SIF} /BooteJTK/BooteJTK-CalcP.py -f {input} -p /BooteJTK/ref_files/period24.txt -s /BooteJTK/ref_files/phases_00-22_by2.txt -a /BooteJTK/ref_files/asymmetries_02-22_by2.txt -z 25 -r {params.num_reps} -R -x OUT && cp data/{wildcards.study}/bootejtk/expression.tpm.for_BooteJTK_Vash_OUT_boot25-rep{params.num_reps}_GammaP.txt {output}"
 
 rule plot_qc:
     input:
