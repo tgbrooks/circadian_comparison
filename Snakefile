@@ -355,11 +355,12 @@ rule run_bootejtk:
     resources:
         mem_mb = 6_000,
     params:
-        num_reps = lambda wildcards: '1' if all_unique(sample_timepoints(wildcards.study, drop_outliers=True)) else '2'
+        num_reps = lambda wildcards: '1' if all_unique(sample_timepoints(wildcards.study, drop_outliers=True)) else '2',
+        args = lambda wildcards: '-U' if all_unique([x % 24 for x in sample_timepoints(wildcards.study, drop_outliers=True)]) else '2'
     shell:
         # Note that the output file name depends upon the number of replicates, which has to vary from one study to the next. Therefore
         # we copy the output to a standardized output name
-        "apptainer run --bind {WORKING_DIR} {BOOTEJTK_SIF} /BooteJTK/BooteJTK-CalcP.py -f {input} -p /BooteJTK/ref_files/period24.txt -s /BooteJTK/ref_files/phases_00-22_by2.txt -a /BooteJTK/ref_files/asymmetries_02-22_by2.txt -z 25 -r {params.num_reps} -R -x OUT && cp data/{wildcards.study}/bootejtk/expression.tpm.for_BooteJTK_Vash_OUT_boot25-rep{params.num_reps}_GammaP.txt {output}"
+        "apptainer run --bind {WORKING_DIR} {BOOTEJTK_SIF} /BooteJTK/BooteJTK-CalcP.py -f {input} -p /BooteJTK/ref_files/period24.txt -s /BooteJTK/ref_files/phases_00-22_by2.txt -a /BooteJTK/ref_files/asymmetries_02-22_by2.txt -z 25 -r {params.num_reps} -R {params.args} -x OUT && cp data/{wildcards.study}/bootejtk/expression.tpm.for_BooteJTK_Vash_OUT_boot25-rep{params.num_reps}_GammaP.txt {output}"
 
 rule plot_qc:
     input:
