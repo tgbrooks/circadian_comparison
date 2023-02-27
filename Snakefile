@@ -18,6 +18,7 @@ wildcard_constraints:
     sample = "GSM(\d+)",
     period = ".*", # Allow empty periods, empty means default
     permutation = r"(_perm/[0-9]+|)", # Permutation '' means no permutation, else a number
+    study = "[a-zA-Z0-9]+",
 
 rule all:
     input:
@@ -25,7 +26,7 @@ rule all:
         expand("data/{study}/sample_data.txt", study=targets.keys()),
         expand("data/{study}/label_expression.tpm.txt", study=studies),
         expand("data/{study}/jtk.results.txt", study=studies),
-        expand("data/{study}/bootejtk/results.txt", study=targets.keys()),
+        #expand("data/{study}/bootejtk/results.txt", study=studies),
         # All tissue-level files:
         expand("results/{tissue}/{file}",
             tissue = tissues,
@@ -60,13 +61,13 @@ rule all:
         # NOTE: big computation, ~500 hours of CPU time
         #"results/Liver/spline_fit/summary.txt",
         #"results/Liver/spline_fit_perm/1/batches/1.summary.txt",
-        "results/Liver/spline_fit/tsne.png",
-        "results/Liver/spline_fit/stats/",
+        #"results/Liver/spline_fit/tsne.png",
+        #"results/Liver/spline_fit/stats/",
         #"results/Liver/spline_fit_perm/1/summary.txt",
         #"results/Liver/spline_fit_perm/1/stats/",
-        "results/Liver/stable_genes/stable_gene_list.txt",
-        "results/Liver/spline_fit/phase_variability/phase_std_distribution.png",
-        "results/Liver/supplemental/",
+        #"results/Liver/spline_fit/phase_variability/phase_std_distribution.png",
+        #"results/Liver/stable_genes/stable_gene_list.txt",
+        #"results/Liver/supplemental/",
 
 rule get_series_matrix:
     output:
@@ -97,9 +98,10 @@ checkpoint split_samples:
     input:
         "data/{study}/sample_data.txt"
     output:
-        directory("data/{study}/samples/")
+        "data/{study}/samples/split_flag"
     run:
-        outdir = pathlib.Path(output[0])
+        outflag = pathlib.Path(output[0])
+        outdir = outflag.parent
         outdir.mkdir(exist_ok=True)
 
         sample_data = pandas.read_csv(input[0], sep="\t")
@@ -113,10 +115,12 @@ checkpoint split_samples:
             sample_dir = (outdir / sample)
             sample_dir.mkdir(exist_ok=True)
             (sample_dir / "SRX.txt").open("w").write(srx)
+        outflag.touch()
 
 rule download_sra_files:
     input:
-        "data/{study}/samples/{sample}/SRX.txt"
+        "data/{study}/samples/{sample}/SRX.txt",
+        "data/{study}/samples/split_flag",
     output:
         temp(directory("data/{study}/SRA/{sample}/"))
     message:
@@ -194,7 +198,7 @@ rule run_salmon:
 def all_selected_samples(study):
     ''' List all selected sample identifiers for a study '''
     output = checkpoints.split_samples.get(study=study).output[0]
-    samples_dir = pathlib.Path(output)
+    samples_dir = pathlib.Path(output).parent
     return [sample_dir.name for sample_dir in samples_dir.glob("GSM*")]
 
 def all_salmon_output(wildcards):
@@ -288,6 +292,7 @@ rule run_jtk:
     input:
         "data/{study}/expression.tpm.for_JTK.txt",
         "data/{study}/sample_data.txt",
+        "data/{study}/expression.tpm.txt",
     output:
         "data/{study}/jtk{period}/JTKresult_expression.tpm.for_JTK.txt"
     params:
