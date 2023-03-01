@@ -58,6 +58,7 @@ rule all:
                 "study_table.txt",
             ]
         ),
+        "results/Liver/compareRhythms/summary.txt",
         # NOTE: big computation, ~500 hours of CPU time
         #"results/Liver/spline_fit/summary.txt",
         #"results/Liver/spline_fit_perm/1/batches/1.summary.txt",
@@ -722,6 +723,48 @@ rule assess_phase_variability:
         phase_std_distribution = "results/{tissue}/spline_fit/phase_variability/phase_std_distribution.png"
     script:
         "scripts/assess_phase_variability.py"
+
+rule run_compare_rhythms:
+    input:
+        "data/{study1}/expression.num_reads.txt",
+        "data/{study2}/expression.num_reads.txt",
+        "data/{study1}/sample_data.txt",
+        "data/{study1}/expression.tpm.txt",
+        "data/{study2}/sample_data.txt",
+        "data/{study2}/expression.tpm.txt",
+        outliers = "results/{tissue}/outlier_samples.txt",
+    output:
+        "results/{tissue}/compareRhythms/results.{study1}.{study2}.txt"
+    params:
+        timepoints1 = lambda wildcards: sample_timepoints(wildcards.study1),
+        timepoints2 = lambda wildcards: sample_timepoints(wildcards.study2),
+    script:
+        "scripts/run_compare_rhythms.R"
+
+rule assess_compare_rhythms:
+    input:
+        compRhythms = lambda wildcards: [f"results/{wildcards.tissue}/compareRhythms/results.{study1}.{study2}.txt"
+                                            for study1 in studies_by_tissue(wildcards.tissue)
+                                            for study2 in studies_by_tissue(wildcards.tissue)
+                                            if study1 > study2]
+    output:
+        "results/{tissue}/compareRhythms/summary.txt"
+    run:
+        import pandas
+        summary = []
+        for study1 in studies_by_tissue(wildcards.tissue):
+            for study2 in studies_by_tissue(wildcards.tissue):
+                if study1 <= study2:
+                    continue
+                res = pandas.read_csv(f"results/{wildcards.tissue}/compareRhythms/results.{study1}.{study2}.txt", sep="\t")
+                table = pandas.DataFrame(dict(
+                    counts = res.category.value_counts(),
+                    study1 = study1,
+                    study2 = study2,
+                ))
+                table.index.name = "category"
+                summary.append(table)
+        pandas.concat(summary).to_csv(output[0], sep="\t")
 
 rule prepare_supplemental:
     input:
