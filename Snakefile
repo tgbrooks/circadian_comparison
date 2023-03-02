@@ -58,7 +58,8 @@ rule all:
                 "study_table.txt",
             ]
         ),
-        "results/Liver/compareRhythms/summary.txt",
+        "results/Liver/compareRhythms/plots/",
+        #"results/Liver/compareRhythms/summary.txt",
         # NOTE: big computation, ~500 hours of CPU time
         #"results/Liver/spline_fit/summary.txt",
         #"results/Liver/spline_fit_perm/1/batches/1.summary.txt",
@@ -734,14 +735,14 @@ rule run_compare_rhythms:
         "data/{study2}/expression.tpm.txt",
         outliers = "results/{tissue}/outlier_samples.txt",
     output:
-        "results/{tissue}/compareRhythms/results.{study1}.{study2}.txt"
+        temp("results/{tissue}/compareRhythms/results.{study1}.{study2}.txt")
     params:
         timepoints1 = lambda wildcards: sample_timepoints(wildcards.study1),
         timepoints2 = lambda wildcards: sample_timepoints(wildcards.study2),
     script:
         "scripts/run_compare_rhythms.R"
 
-rule assess_compare_rhythms:
+rule gather_compare_rhythms:
     input:
         compRhythms = lambda wildcards: [f"results/{wildcards.tissue}/compareRhythms/results.{study1}.{study2}.txt"
                                             for study1 in studies_by_tissue(wildcards.tissue)
@@ -765,6 +766,15 @@ rule assess_compare_rhythms:
                 table.index.name = "category"
                 summary.append(table)
         pandas.concat(summary).to_csv(output[0], sep="\t")
+
+rule plot_compare_rhythms:
+    input:
+        summary = "results/{tissue}/compareRhythms/summary.txt",
+        all_jtk = "results/{tissue}/jtk24.results.txt",
+    output:
+        outdir = directory("results/{tissue}/compareRhythms/plots/")
+    script:
+        "scripts/plot_compare_rhythms.py"
 
 rule prepare_supplemental:
     input:
