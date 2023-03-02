@@ -58,7 +58,14 @@ outliers <- read_tsv(snakemake@input[["outliers"]], col_names = c("sample_id"))
 data1_outliers <- data1 %>% select(starts_with("GSM")) %>% colnames %in% outliers$sample_id
 data2_outliers <- data2 %>% select(starts_with("GSM")) %>% colnames %in% outliers$sample_id
 is_outlier <- c(data1_outliers, data2_outliers)
-selected_data <- as.matrix(joined_data[!is_outlier])
+
+# Find genes with a minimum expression amount
+MIN_EXPRESSION = 20 # read counts
+total_counts <- rowSums(joined_data %>% select(starts_with("GSM")))
+selected_genes <- total_counts > MIN_EXPRESSION
+
+# Get just the parts of the data that we care about
+selected_data <- as.matrix(joined_data[selected_genes, !is_outlier])
 selected_design <- design[!is_outlier,]
 print(head(selected_data))
 print(selected_design)
