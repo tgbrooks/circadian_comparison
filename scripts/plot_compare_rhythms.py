@@ -5,6 +5,10 @@ import pandas
 import matplotlib
 import pylab
 
+JUST_LEFT_COLOR = "#a53131"
+JUST_BOTTOM_COLOR = "#0c1860"
+BOTH_COLOR = "grey"
+
 from studies import targets as study_info
 
 import studies
@@ -68,7 +72,7 @@ def plot_overlaps(ax, x,y, just1, just2, both, scale):
         [i + corner, j + corner],
         width = square_size,
         height = square_size,
-        facecolor = "gray",
+        facecolor = BOTH_COLOR,
     )
 
     if just2_size < 0.2:
@@ -81,7 +85,7 @@ def plot_overlaps(ax, x,y, just1, just2, both, scale):
         [i + corner, j + corner],
         width = just2_width * square_size,
         height = just2_height * square_size,
-        facecolor = "blue",
+        facecolor = JUST_LEFT_COLOR,
     )
     #both_rect = matplotlib.patches.Rectangle(
     #    [i + corner + just2_size, j + corner],
@@ -99,7 +103,7 @@ def plot_overlaps(ax, x,y, just1, just2, both, scale):
         [i + corner + square_size - just1_width * square_size, j + corner],
         width = just1_width * square_size,
         height = just1_height * square_size,
-        facecolor = "red",
+        facecolor = JUST_BOTTOM_COLOR,
     )
     ax.add_patch(total_rect)
     #ax.add_patch(both_rect)
@@ -153,9 +157,9 @@ y = (len(study_order) -6*2) / 2
 ax.add_patch(matplotlib.patches.Rectangle([x,y - np.sqrt(500/scale)/2], np.sqrt(500/scale), np.sqrt(500/scale), color="black"))
 ax.add_patch(matplotlib.patches.Rectangle([x,y+2 - np.sqrt(2000/scale)/2], np.sqrt(2000/scale), np.sqrt(2000/scale), color="black"))
 ax.add_patch(matplotlib.patches.Rectangle([x,y+4 - np.sqrt(5000/scale)/2], np.sqrt(5000/scale), np.sqrt(5000/scale), color="black"))
-ax.add_patch(matplotlib.patches.Rectangle([x,y+6 - np.sqrt(5000/scale)/2], np.sqrt(5000/scale), np.sqrt(5000/scale), color="gray"))
-ax.add_patch(matplotlib.patches.Rectangle([x,y+8 - np.sqrt(5000/scale)/2], np.sqrt(5000/scale), np.sqrt(5000/scale), color="blue"))
-ax.add_patch(matplotlib.patches.Rectangle([x,y+10 - np.sqrt(5000/scale)/2], np.sqrt(5000/scale), np.sqrt(5000/scale), color="red"))
+ax.add_patch(matplotlib.patches.Rectangle([x,y+6 - np.sqrt(5000/scale)/2], np.sqrt(5000/scale), np.sqrt(5000/scale), color=BOTH_COLOR))
+ax.add_patch(matplotlib.patches.Rectangle([x,y+8 - np.sqrt(5000/scale)/2], np.sqrt(5000/scale), np.sqrt(5000/scale), color=JUST_LEFT_COLOR))
+ax.add_patch(matplotlib.patches.Rectangle([x,y+10 - np.sqrt(5000/scale)/2], np.sqrt(5000/scale), np.sqrt(5000/scale), color=JUST_BOTTOM_COLOR))
 ax.annotate("500 genes", [x+0.5,y], xytext = (5,0), textcoords='offset points', va="center")
 ax.annotate("2000 genes", [x+0.5,y+2], xytext = (5,0), textcoords='offset points', va="center")
 ax.annotate("5000 genes", [x+0.5,y+4], xytext = (5,0), textcoords='offset points', va="center")
