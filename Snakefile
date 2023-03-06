@@ -60,9 +60,9 @@ rule all:
             ]
         ),
         "results/Liver/compareRhythms/plots/",
-        #"results/Liver/compareRhythms/summary.txt",
+        "results/Liver/compareRhythms/summary.txt",
         # NOTE: big computation, ~500 hours of CPU time
-        #"results/Liver/spline_fit/summary.txt",
+        "results/Liver/spline_fit/summary.txt",
         #"results/Liver/spline_fit_perm/1/batches/1.summary.txt",
         #"results/Liver/spline_fit/tsne.png",
         #"results/Liver/spline_fit/stats/",
