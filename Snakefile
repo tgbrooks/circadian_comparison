@@ -2,6 +2,7 @@ import pathlib
 import json
 import re
 import pandas
+import collections
 from  scripts.process_series_matrix import process_series_matrix
 
 from studies import targets, studies, sample_timepoints, select_tissue, studies_by_tissue
@@ -12,13 +13,13 @@ SPLINE_FIT_N_BATCHES = 400
 # Require at least this number of mean reads per gene to include in q-value computations
 MEAN_READCOUNT_THRESHOLD = 2
 WORKING_DIR = "/project/itmatlab/for_tom/circadian_controls/"
-BOOTEJTK_SIF = "~/.apptainer/images/bootejtk_latest.sif"
+BOOTEJTK_SIF = "~/.apptainer/images/ejtk_bootejtk.sif"
 
 wildcard_constraints:
     sample = "GSM(\d+)",
     period = ".*", # Allow empty periods, empty means default
     permutation = r"(_perm/[0-9]+|)", # Permutation '' means no permutation, else a number
-    study = "[a-zA-Z0-9]+",
+    study = "[a-zA-Z0-9_]+",
 
 rule all:
     input:
@@ -26,7 +27,7 @@ rule all:
         expand("data/{study}/sample_data.txt", study=targets.keys()),
         expand("data/{study}/label_expression.tpm.txt", study=studies),
         expand("data/{study}/jtk.results.txt", study=studies),
-        #expand("data/{study}/bootejtk/results.txt", study=studies),
+        expand("data/{study}/bootejtk/results.txt", study=studies),
         # All tissue-level files:
         expand("results/{tissue}/{file}",
             tissue = tissues,
@@ -51,7 +52,7 @@ rule all:
                 "jtk24.results.txt",
                 "jtk12.results.txt",
                 "jtk8.results.txt",
-                "amplitude_scatter_grid.png",
+                #"amplitude_scatter_grid.png",
                 "consensus_pca/",
                 "outlier_samples.txt",
                 "assess_jtk/period_statistics.txt",
@@ -331,7 +332,7 @@ rule process_jtk:
         jtk.loc[selected, 'qvalue'] = qs
         jtk.to_csv(output[0], sep="\t")
 
-rule prep_bootejk:
+rule prep_bootejtk:
     input:
         tpm = "data/{study}/expression.tpm.txt",
         sample_data = "data/{study}/sample_data.txt",
@@ -351,23 +352,49 @@ rule prep_bootejk:
         tpm_selected.columns = [f"ZT{time}" for time in params.timepoints]
         tpm_selected.to_csv(output.tpm, sep="\t")
 
+rule run_ejtk:
+    # Sometimes we need to run eJTK first and then run BooteJTK using eJTK's output
+    # (For studies with uneven numbers of timepoints
+    input:
+        "data/{study}/bootejtk/expression.tpm.for_BooteJTK.txt",
+    output:
+        "data/{study}/ejtk/results.txt",
+    resources:
+        mem_mb = 6_000,
+    shell:
+        # Note that the output file name depends upon the number of replicates, which has to vary from one study to the next. Therefore
+        # we copy the output to a standardized output name
+        "apptainer run --bind {WORKING_DIR} {BOOTEJTK_SIF} /eJTK/eJTK-CalcP.py -f {input} -p /eJTK/ref_files/period24.txt -s /eJTK/ref_files/phases_00-22_by2.txt -a /eJTK/ref_files/asymmetries_02-22_by2.txt -x OUT && cp data/{wildcards.study}/bootejtk/expression.tpm.for_BooteJTK_OUT_jtkout_GammaP.txt {output}"
 
-def all_unique(x):
- return len(set(x)) == len(x)
+
+def bootejtk_rep_count(study):
+    timepoints = [x % 24 for x in sample_timepoints(study, drop_outliers=True)]
+    counts = list(collections.Counter(timepoints).values())
+    if max(counts) != min(counts):
+        # BooteJTK gets handled specially if studies have uneven numbers of replicates per timepoints then
+        # they also have to simulated as if unique
+        return 1
+    else:
+         # number of replicates per timepoint - same for all timepoints
+        return len(timepoints)//len(set(timepoints))
+unique_or_uneven_study = {study: bootejtk_rep_count(study) == 1 for study in studies}
+
 rule run_bootejtk:
     input:
         "data/{study}/bootejtk/expression.tpm.for_BooteJTK.txt",
+        ejtk = lambda wildcards: f"data/{wildcards.study}/ejtk/results.txt" if bootejtk_rep_count(wildcards.study) == 1 else []
     output:
         "data/{study}/bootejtk/results.txt",
     resources:
         mem_mb = 6_000,
     params:
-        num_reps = lambda wildcards: '1' if all_unique(sample_timepoints(wildcards.study, drop_outliers=True)) else '2',
-        args = lambda wildcards: '-U' if all_unique([x % 24 for x in sample_timepoints(wildcards.study, drop_outliers=True)]) else '2'
+        num_reps = lambda wildcards: bootejtk_rep_count(wildcards.study),
+        args = lambda wildcards: f'-U -J data/{wildcards.study}/ejtk/results.txt' if bootejtk_rep_count(wildcards.study) == 1 else '',
+        out_file_prefix = lambda wildcards: "NoRepSD" if bootejtk_rep_count(wildcards.study) == 1 else 'Vash'
     shell:
         # Note that the output file name depends upon the number of replicates, which has to vary from one study to the next. Therefore
         # we copy the output to a standardized output name
-        "apptainer run --bind {WORKING_DIR} {BOOTEJTK_SIF} /BooteJTK/BooteJTK-CalcP.py -f {input} -p /BooteJTK/ref_files/period24.txt -s /BooteJTK/ref_files/phases_00-22_by2.txt -a /BooteJTK/ref_files/asymmetries_02-22_by2.txt -z 25 -r {params.num_reps} -R {params.args} -x OUT && cp data/{wildcards.study}/bootejtk/expression.tpm.for_BooteJTK_Vash_OUT_boot25-rep{params.num_reps}_GammaP.txt {output}"
+        "apptainer run --bind {WORKING_DIR} {BOOTEJTK_SIF} /BooteJTK/BooteJTK-CalcP.py -f {input[0]} -p /BooteJTK/ref_files/period24.txt -s /BooteJTK/ref_files/phases_00-22_by2.txt -a /BooteJTK/ref_files/asymmetries_02-22_by2.txt -z 25 -r {params.num_reps} -R {params.args} -x OUT && cp data/{wildcards.study}/bootejtk/expression.tpm.for_BooteJTK_{params.out_file_prefix}_OUT_boot25-rep{params.num_reps}_GammaP.txt {output}"
 
 rule plot_qc:
     input:
