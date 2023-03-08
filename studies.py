@@ -2,8 +2,12 @@ import re
 import pandas
 def extract_ctzt(times):
     return [int(re.search("[ZC]T(\d+)", time).groups()[0]) for time in times]
+def extract_ctzt_lower(times):
+    return [int(re.search("[zc]t(\d+)", time).groups()[0]) for time in times]
 def extract_gap_ctzt(times):
     return [int(re.search("[ZC]T (\d+)", time).groups()[0]) for time in times]
+def extract_TP(times):
+    return [int(re.search("TP(\d+)", time).groups()[0]) for time in times]
 def manella21_time(times):
     return [int(re.search("(\d+)[AB]", time).groups()[0]) for time in times]
 def only_number(times):
@@ -733,6 +737,143 @@ targets = {
         "age_high": 52,
     },
 
+    "Acosta-Rodriguez22A":  {
+        "GSE": "GSE190939",
+        "tissue": "Liver",
+        "sample_selector": lambda x: (x.age == '6 months-old') and (x.feeding == 'Ad libitum'),
+        "time": lambda sample_data, expression_table: manella21_time(list(sample_data.loc[expression_table.columns]['title'])),
+        "short_name": "Acosta-Rodríguez22A",
+        "seq": "PolyA",
+        "sex": "M",
+        "ligh": "DD",
+        "age_low": 26,
+        "age_high": 26,
+    },
+
+    "Acosta-Rodriguez22B": {
+        "GSE": "GSE190939",
+        "tissue": "Liver",
+        "sample_selector": lambda x: (x.age == '19 months-old') and (x.feeding == 'Ad libitum'),
+        "time": lambda sample_data, expression_table: manella21_time(list(sample_data.loc[expression_table.columns]['title'])),
+        "short_name": "Acosta-Rodríguez22B",
+        "seq": "PolyA",
+        "sex": "M",
+        "light": "DD",
+        "age_low": 82,
+        "age_high": 82,
+    },
+
+    "Katsioudi22": {
+        "GSE": "GSE208768",
+        "tissue": "Liver",
+        "sample_selector": lambda x: (x.genotype == 'WT'),
+        "time": lambda sample_data, expression_table: only_number(list(sample_data.loc[expression_table.columns]['zeitgeber time'])),
+        "seq": "RiboZero",
+        "sex": "M",
+        "light": "LD",
+        "age_low": 52,
+        "age_high": 104,
+    },
+
+    "Astafev23": {
+        "GSE": "GSE216416",
+        "tissue": "Liver",
+        "sample_selector": lambda x: (x.treatment == 'Ad-libitum diet'),
+        "time": lambda sample_data, expression_table: extract_ctzt_lower(list(sample_data.loc[expression_table.columns]['time point'])),
+        "seq": "PolyA",
+        "sex": "F",
+        "light": "LD",
+        "age_low": 21,
+        "age_high": 21,
+    },
+
+    "Mezhnina22": {
+        "GSE": "GSE211975",
+        "tissue": "Liver",
+        "sample_selector": lambda x: (x.diet == 'AL'),
+        "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns]['time'])),
+        "seq": "PolyA",
+        "sex": "F",
+        "light": "LD",
+        "age_low": 21,
+        "age_high": 21,
+    },
+
+    "Koritala22": {
+        "GSE": "GSE214530",
+        "tissue": "Liver",
+        "sample_selector": lambda x: (x.treatment == 'Normoxia') and (x.tissue == 'Liver'),
+        #"time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns]['time'])), unknown!!
+        # TODO: author contacted, needs to be updated
+    },
+
+    "Koronowski22": {
+        "GSE": "GSE158600",
+        "tissue": "Liver",
+        "sample_selector": lambda x: (x['genotype/variation'] == 'WT'),
+        "time": lambda sample_data, expression_table: extract_TP(list(sample_data.loc[expression_table.columns]['time of harvest'])),
+        "seq": "RiboZero",
+        "sex": "M",
+        "light": "LD",
+        "age_low": 8,
+        "age_high": 12,
+    },
+
+    "Petrus22": {
+        "GSE": "GSE196430",
+        "tissue": "Liver",
+        "sample_selector": lambda x: (x['genotype/variation'] == 'WT'),
+        "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns]['time point'])),
+        "seq": "PolyA",
+        "sex":  "M",
+        "age_low": 8,
+        "age_high": 12,
+        #TODO: DD? Author contacted.
+    },
+
+    "Mekbib22A": {
+        "GSE": "GSE182834",
+        "tissue": "Liver",
+        "sample_selector": lambda x: (x['genotype'] == 'wild type') and (x.Sex == 'Male'),
+        "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns]['time point'])),
+        "seq": "PolyA",
+        "sex": "M",
+        "age_low": 20,
+        "age_high": 20,
+    },
+
+    "Mekbib22A": {
+        "GSE": "GSE182834",
+        "tissue": "Liver",
+        "sample_selector": lambda x: (x['genotype'] == 'wild type') and (x.Sex == 'Female'),
+        "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns]['time point'])),
+        "seq": "PolyA",
+        "sex": "F",
+        "age_low": 20,
+        "age_high": 20,
+        "light": "LD",
+    },
+
+    "Abe22": {
+        "GSE": "GSE199061",
+        "tissue": "Liver",
+        "sample_selector": lambda x: (x['genotype'] == 'WT'),
+        "time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns]['time'])),
+        "seq": "PolyA",
+        "sex": "M",
+        "age_low": 8,
+        "age_high": 24,
+        "light": "DD",
+    },
+
+    "Jouffe22": {
+        "GSE": "GSE190221",
+        "tissue": "Liver",
+        "seq": "RiboZero",
+        # TODO: can we separate out the sexes?? no....
+    },
+
+
 
     #### Kidney Studies ####
 
@@ -817,8 +958,9 @@ studies = [
     "Manella21_Liver", "Lahens15", "Weger18_Liver_F", "Zhang14_RNAseq_Liver_M", "Atger15_NightFeed", "Yang16A_M", "Yang16B_F", "Koronowski19_F", "Xin21_Liver_NightFeed", "Yang20", "Kinouchi18_Liver", "Mermet18", "Benegiamo18", "Cajan16", "Chaix19_AdLib_HFD", "Chaix19_NightFeed_HFD", "Chen19", "Gaucher19_Chronic_Cntrl", "Greenwell19_NightFeed", "Hirako18", "Quagliarini19_HFD", "Quagliarini19_HFD_WTvsKO", "Wu19", "Li19_Young", "Li19_Old",
     # new:
     "Aviram21", "Frazier22A", "Frazier22B", "Wu23",
+    "Acosta-Rodriguez22A", "Acosta-Rodriguez22B", "Katsioudi22", "Astafev23", "Mezhnina22", "Koronowski22", "Petrus22", "Mekbib22A", "Mekbib22A", "Abe22",
     # Kidney:
-    "Yeung17", "Zhang14_RNAseq_Kidney_M", "Castelo-Szekely17", "Mermet18_Kidney_NightFeed", "Mermet18_Kidney", "Xin21_Kidney_NightFeed"
+    "Yeung17", "Zhang14_RNAseq_Kidney_M", "Castelo-Szekely17", "Mermet18_Kidney_NightFeed", "Mermet18_Kidney", "Xin21_Kidney_NightFeed",
     ]
 
 # List of all tissues being run
