@@ -5,7 +5,14 @@ import pandas
 import collections
 from  scripts.process_series_matrix import process_series_matrix
 
+import studies as studies_config
 from studies import targets, studies, sample_timepoints, select_tissue, studies_by_tissue
+def sample_timepoints(study, **kwargs):
+    # Force checkpoint checking...
+    output = checkpoints.split_samples.get(study=study).output[0]
+    tissue = targets[study]['tissue']
+    output = checkpoints.outlier_detection.get(tissue=tissue).output[0]
+    return studies_config.sample_timepoints(study, **kwargs)
 
 tissues = ["Liver"]
 
@@ -19,7 +26,7 @@ wildcard_constraints:
     sample = "GSM(\d+)",
     period = ".*", # Allow empty periods, empty means default
     permutation = r"(_perm/[0-9]+|)", # Permutation '' means no permutation, else a number
-    study = "[a-zA-Z0-9_]+",
+    study = "[a-zA-Z0-9_-]+",
 
 rule all:
     input:
@@ -64,13 +71,13 @@ rule all:
         # NOTE: big computation, ~500 hours of CPU time
         "results/Liver/spline_fit/summary.txt",
         #"results/Liver/spline_fit_perm/1/batches/1.summary.txt",
-        #"results/Liver/spline_fit/tsne.png",
-        #"results/Liver/spline_fit/stats/",
-        #"results/Liver/spline_fit_perm/1/summary.txt",
-        #"results/Liver/spline_fit_perm/1/stats/",
-        #"results/Liver/spline_fit/phase_variability/phase_std_distribution.png",
-        #"results/Liver/stable_genes/stable_gene_list.txt",
-        #"results/Liver/supplemental/",
+        "results/Liver/spline_fit/tsne.png",
+        "results/Liver/spline_fit/stats/",
+        "results/Liver/spline_fit_perm/1/summary.txt",
+        "results/Liver/spline_fit_perm/1/stats/",
+        "results/Liver/spline_fit/phase_variability/phase_std_distribution.png",
+        "results/Liver/stable_genes/stable_gene_list.txt",
+        "results/Liver/supplemental/",
 
 rule get_series_matrix:
     output:
@@ -296,6 +303,8 @@ rule run_jtk:
         "data/{study}/expression.tpm.for_JTK.txt",
         "data/{study}/sample_data.txt",
         "data/{study}/expression.tpm.txt",
+        lambda wildcards: checkpoints.split_samples.get(study=wildcards.study).output[0], # Trigger checkpoint
+        outliers = lambda wildcards: f"results/{targets[wildcards.study]['tissue']}/outlier_samples.txt",
     output:
         "data/{study}/jtk{period}/JTKresult_expression.tpm.for_JTK.txt"
     params:
@@ -337,6 +346,7 @@ rule prep_bootejtk:
         tpm = "data/{study}/expression.tpm.txt",
         sample_data = "data/{study}/sample_data.txt",
         outliers = lambda wildcards: f"results/{targets[wildcards.study]['tissue']}/outlier_samples.txt",
+        split_samples = lambda wildcards: checkpoints.split_samples.get(study=wildcards.study).output[0], # Trigger checkpoint
     output:
         tpm = temp("data/{study}/bootejtk/expression.tpm.for_BooteJTK.txt",)
     params:
@@ -377,12 +387,13 @@ def bootejtk_rep_count(study):
     else:
          # number of replicates per timepoint - same for all timepoints
         return len(timepoints)//len(set(timepoints))
-unique_or_uneven_study = {study: bootejtk_rep_count(study) == 1 for study in studies}
 
 rule run_bootejtk:
     input:
+        "data/{study}/expression.tpm.txt",
         "data/{study}/bootejtk/expression.tpm.for_BooteJTK.txt",
-        ejtk = lambda wildcards: f"data/{wildcards.study}/ejtk/results.txt" if bootejtk_rep_count(wildcards.study) == 1 else []
+        ejtk = lambda wildcards: f"data/{wildcards.study}/ejtk/results.txt" if bootejtk_rep_count(wildcards.study) == 1 else [],
+        outliers = lambda wildcards: f"results/{targets[wildcards.study]['tissue']}/outlier_samples.txt",
     output:
         "data/{study}/bootejtk/results.txt",
     resources:
@@ -602,7 +613,9 @@ rule all_jtk: # Gather all JTK results of a tissue together
         all_jtk.rename(columns={"CycID": "ID"}, inplace=True)
         all_jtk.to_csv(output.all_jtk, sep="\t", index=False)
 
-rule outlier_detection:
+checkpoint outlier_detection:
+    # NOTE: this wouldn't normally have to be a checkpoint but we want to read its outputs
+    # in params and therefore we make it a checkpoint
     input:
         tpm = "results/{tissue}/tpm_all_samples.txt",
         sample_info = "results/{tissue}/all_samples_info.txt",
@@ -708,9 +721,7 @@ rule plot_spline_fits:
         outliers = "results/{tissue}/outlier_samples.txt",
         curves_fit = "results/{tissue}/spline_fit/curves_fit.txt",
         curves_pstd = "results/{tissue}/spline_fit/curves_pstd.txt",
-        num_peaks = "results/{tissue}/spline_fit/stats/num_peaks.txt",
-        goodness_of_fit  = "results/{tissue}/spline_fit/stats/goodness_of_fit.txt",
-        asymmetric = "results/{tissue}/spline_fit/stats/asymmetric.txt",
+        statsdir = "results/{tissue}/spline_fit/stats/",
     output:
         pca = "results/{tissue}/spline_fit/pca.png",
         tsne = "results/{tissue}/spline_fit/tsne.png",
@@ -761,6 +772,8 @@ rule run_compare_rhythms:
         "data/{study2}/sample_data.txt",
         "data/{study2}/expression.tpm.txt",
         outliers = "results/{tissue}/outlier_samples.txt",
+        split_samples1 = lambda wildcards: checkpoints.split_samples.get(study=wildcards.study1).output[0], # Trigger checkpoint
+        split_samples2 = lambda wildcards: checkpoints.split_samples.get(study=wildcards.study2).output[0], # Trigger checkpoint
     output:
         temp("results/{tissue}/compareRhythms/results.{study1}.{study2}.txt")
     params:
