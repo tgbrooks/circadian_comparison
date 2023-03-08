@@ -37,7 +37,7 @@ def process_series_matrix(series_matrix_path):
                     for i, entry in enumerate(values):
                         if not entry:
                             continue # Skip empty entries
-                        char_name, char_value = entry.split(":")
+                        char_name, char_value = entry.split(":", maxsplit=1)
                         char_value = char_value.strip()
                         sample = sample_characteristics.get(i, {})
                         sample[char_name] = char_value
