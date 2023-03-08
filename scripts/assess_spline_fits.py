@@ -32,6 +32,17 @@ curves_pstd = pandas.read_csv(snakemake.input.curves_pstd, sep="\t", index_col=0
 re = pandas.read_csv(snakemake.input.re, sep="\t", index_col=0) # random effects
 re_structure = pandas.read_csv(snakemake.input.re_structure, sep="\t", index_col=0)
 
+### TODO DROP THIS ###
+# JUST FOR TESTING ###
+# ONLY USE A FEW GENES
+just_use = list(summary.head(100).index)
+summary = summary.loc[just_use]
+curves = curves.loc[just_use]
+curves_pstd = curves_pstd.loc[just_use]
+re = re.loc[just_use]
+re_structure = re_structure.loc[just_use]
+######################
+
 #num_zeros = (tpm == 0).sum(axis=1)
 summary['median_t'] =  (curves.abs()/curves_pstd).median(axis=1)
 summary['rel_amp'] = summary['fit_amplitude'] / summary['sigma']
@@ -147,6 +158,7 @@ def count_peaks(tstats):
 
 num_peaks = count_peaks(tstats[summary.is_rhythmic])
 num_peaks.to_csv(out_dir / "num_peaks.txt", sep="\t")
+print(num_peaks)
 
 ## Determine 3 categories of significant genes
 # 1. Monomodal, symmetric

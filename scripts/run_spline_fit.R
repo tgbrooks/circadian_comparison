@@ -95,39 +95,25 @@ for(gene in selected_genes) {
     tryCatch({
         res <- fit_splines(gene_data$val, gene_data$study, gene_data$time)
 
-        if (is.null(summary)) {
-            # If first iteration, must generate the tables we store these in
-            summary <- as_tibble(res$summary) %>%
-                        mutate(gene=gene, .before=)
-            curves <- as_tibble(res$curves) %>%
-                        mutate(gene=gene)
-            re <- as_tibble(res$random_effects) %>%
-                        mutate(study=rownames(res$random_effects),
-                               gene=gene)
-            re_structure <- as_tibble(res$random_effects_structure) %>%
-                                mutate(var=rownames(res$random_effects_structure),
-                                       gene=gene)
-        } else {
-            # Store the results
-            summary <- bind_rows(
-                summary,
-                as_tibble(res$summary) %>%
-                    mutate(gene=gene))
-            curves <- bind_rows(
-                curves,
-                as_tibble(res$curves) %>%
-                    mutate(gene=gene))
-            re <- bind_rows(
-                re,
-                as_tibble(res$random_effects) %>%
-                    mutate(study=rownames(res$random_effects),
-                           gene=gene))
-            re_structure <- bind_rows(
-                re_structure,
-                as_tibble(res$random_effects_structure) %>%
-                    mutate(var=rownames(res$random_effects_structure),
-                           gene=gene))
-        }
+        # Store the results
+        summary <- bind_rows(
+            summary,
+            as_tibble(res$summary) %>%
+                mutate(gene=gene))
+        curves <- bind_rows(
+            curves,
+            as_tibble(res$curves) %>%
+                mutate(gene=gene))
+        re <- bind_rows(
+            re,
+            as_tibble(res$random_effects) %>%
+                mutate(study=rownames(res$random_effects),
+                       gene=gene))
+        re_structure <- bind_rows(
+            re_structure,
+            as_tibble(res$random_effects_structure) %>%
+                mutate(var=rownames(res$random_effects_structure),
+                       gene=gene))
     },
     error=function(e) {
         print("Failed on gene:")
@@ -137,8 +123,16 @@ for(gene in selected_genes) {
     print(gene)
 }
 
-write_tsv(summary %>% relocate(gene), output[['summary']])
-write_tsv(curves %>% select(gene, u, fit) %>% spread(u,fit), output[['curves_fit']])
-write_tsv(curves %>% select(gene, u, pstd) %>% spread(u,pstd), output[['curves_pstd']])
-write_tsv(re %>% relocate(gene, study), output[['re']])
-write_tsv(re_structure %>% relocate(gene, var), output[['re_structure']])
+if (length(selected_genes) > 0) {
+    write_tsv(summary %>% relocate(gene), output[['summary']])
+    write_tsv(curves %>% select(gene, u, fit) %>% spread(u,fit), output[['curves_fit']])
+    write_tsv(curves %>% select(gene, u, pstd) %>% spread(u,pstd), output[['curves_pstd']])
+    write_tsv(re %>% relocate(gene, study), output[['re']])
+    write_tsv(re_structure %>% relocate(gene, var), output[['re_structure']])
+} else {
+    write_tsv(tibble(NULL), output[['summary']])
+    write_tsv(tibble(NULL), output[['curves_fit']])
+    write_tsv(tibble(NULL), output[['curves_pstd']])
+    write_tsv(tibble(NULL), output[['re']])
+    write_tsv(tibble(NULL), output[['re_structure']])
+}

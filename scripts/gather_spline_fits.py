@@ -8,7 +8,12 @@ for file_type in file_types:
     print(f"Processig {file_type}")
     data_list = []
     for path in batch_dir.glob(f"*.{file_type}"):
-        data_list.append(pandas.read_csv(path, sep="\t"))
+        try:
+            data_list.append(pandas.read_csv(path, sep="\t"))
+        except pandas.errors.EmptyDataError:
+            # Blank files happen when batches exhaust the genes
+            print(f"Skipping empty file {path}")
+            pass
     df = pandas.concat(data_list, axis=0)
     print(f"Found {len(data_list)} files, with total of {len(df)} lines")
     dupe_columns = df.columns.intersection(["gene", "study", "var"])

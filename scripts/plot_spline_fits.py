@@ -40,9 +40,10 @@ re = pandas.read_csv("results/Liver/spline_fit/re.txt", sep="\t", index_col=0) #
 re_structure = pandas.read_csv("results/Liver/spline_fit/re_structure.txt", sep="\t", index_col=0)
 
 
-num_peaks = pandas.read_csv(snakemake.input.num_peaks, sep="\t", index_col=0)['0']
-asymmetric = pandas.read_csv(snakemake.input.asymmetric, sep="\t", index_col=0)['0']
-goodness_of_fit = pandas.read_csv(snakemake.input.goodness_of_fit, sep="\t")
+statsdir = pathlib.Path(snakemake.input.statsdir)
+num_peaks = pandas.read_csv(statsdir / "num_peaks.txt", sep="\t", index_col=0)['0']
+asymmetric = pandas.read_csv(statsdir / "asymmetric.txt", sep="\t", index_col=0)['0']
+goodness_of_fit = pandas.read_csv(statsdir / "goodness_of_fit.txt", sep="\t")
 
 use = summary.is_rhythmic
 dark2 = pylab.get_cmap("Dark2")
