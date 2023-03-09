@@ -17,7 +17,7 @@ def hirako18_time(times):
     return [int(re.search("(\d+)", time).groups()[0])+17 for time in times]
 
 def sample_timepoints(study, drop_outliers=False):
-    sample_data = pandas.read_csv(f"data/{study}/sample_data.txt", sep="\t", index_col="geo_accession")
+    sample_data = pandas.read_csv(f"data/{study}/sample_data.txt", sep="\t", index_col="geo_accession", dtype=str)
     expression_table = pandas.read_csv(f"data/{study}/expression.tpm.txt", sep="\t", index_col=0, nrows=5)
     times = targets[study]["time"](sample_data, expression_table)
     if drop_outliers:
