@@ -20,6 +20,7 @@ def sample_timepoints(study, drop_outliers=False):
     sample_data = pandas.read_csv(f"data/{study}/sample_data.txt", sep="\t", index_col="geo_accession", dtype=str)
     expression_table = pandas.read_csv(f"data/{study}/expression.tpm.txt", sep="\t", index_col=0, nrows=5)
     times = targets[study]["time"](sample_data, expression_table)
+    assert all(isinstance(x, (int, float)) for x in times), f"In {study}, not all timepoints were integers: {times=}"
     if drop_outliers:
         outlier_samples = [x.strip() for x in open(f"results/{targets[study]['tissue']}/outlier_samples.txt").readlines()]
         return list(time for time, sample in zip(times, expression_table.columns) if sample not in outlier_samples)
@@ -280,7 +281,7 @@ targets = {
     "Yang20": {
         "GSE": "GSE115264",
         "sample_selector": lambda x: x.genotype == "WT",
-        "time": lambda sample_data, expression_table: list(sample_data.loc[expression_table.columns]['sample collection time']),
+        "time": lambda sample_data, expression_table: only_number(list(sample_data.loc[expression_table.columns]['sample collection time'])),
         "tissue": "Liver",
         "seq": "PolyA",
         "short_name": "Brooks22",
@@ -517,7 +518,7 @@ targets = {
     "Hidalgo19": {
         "GSE": "GSE125867",
         "sample_selector": lambda x: x.genotype == "WT",
-        "time": lambda sample_data, expression_table: list(sample_data.loc[expression_table.columns]['zeitgeber time']),
+        "time": lambda sample_data, expression_table: only_number(list(sample_data.loc[expression_table.columns]['zeitgeber time'])),
         "tissue": "Liver",
         "seq": "PolyA",
         "short_name": "Rubio-Ponce21",
@@ -840,6 +841,7 @@ targets = {
         "sex": "M",
         "age_low": 20,
         "age_high": 20,
+        "light": "LD",
     },
 
     "Mekbib22B": {
