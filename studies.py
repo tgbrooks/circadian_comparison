@@ -842,7 +842,7 @@ targets = {
         "age_high": 20,
     },
 
-    "Mekbib22A": {
+    "Mekbib22B": {
         "GSE": "GSE182834",
         "tissue": "Liver",
         "sample_selector": lambda x: (x['genotype'] == 'wild type') and (x.Sex == 'Female'),
@@ -958,7 +958,7 @@ studies = [
     "Manella21_Liver", "Lahens15", "Weger18_Liver_F", "Zhang14_RNAseq_Liver_M", "Atger15_NightFeed", "Yang16A_M", "Yang16B_F", "Koronowski19_F", "Xin21_Liver_NightFeed", "Yang20", "Kinouchi18_Liver", "Mermet18", "Benegiamo18", "Cajan16", "Chaix19_AdLib_HFD", "Chaix19_NightFeed_HFD", "Chen19", "Gaucher19_Chronic_Cntrl", "Greenwell19_NightFeed", "Hirako18", "Quagliarini19_HFD", "Quagliarini19_HFD_WTvsKO", "Wu19", "Li19_Young", "Li19_Old",
     # new:
     "Aviram21", "Frazier22A", "Frazier22B", "Wu23",
-    "Acosta-Rodriguez22A", "Acosta-Rodriguez22B", "Katsioudi22", "Astafev23", "Mezhnina22", "Koronowski22", "Petrus22", "Mekbib22A", "Mekbib22A", "Abe22",
+    "Acosta-Rodriguez22A", "Acosta-Rodriguez22B", "Katsioudi22", "Astafev23", "Mezhnina22", "Koronowski22", "Petrus22", "Mekbib22A", "Mekbib22B", "Abe22",
     # Kidney:
     "Yeung17", "Zhang14_RNAseq_Kidney_M", "Castelo-Szekely17", "Mermet18_Kidney_NightFeed", "Mermet18_Kidney", "Xin21_Kidney_NightFeed",
     ]
