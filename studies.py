@@ -13,8 +13,13 @@ def manella21_time(times):
 def only_number(times):
     return [int(re.search("(\d+)", time).groups()[0]) for time in times]
 def hirako18_time(times):
-    # Times are in clock time with ZT0 = 7:00am, so 0 Hour (midnight) is at ZT17
+    # Times are in clock time with ZT0 = 7:00am, so 0:00 (midnight) is at ZT17
+    # (Or equivalently we could subtract 7 from the hour to get the ZT time)
     return [int(re.search("(\d+)", time).groups()[0])+17 for time in times]
+def koritala22_time(times):
+    # Times are in clock time with ZT0 = 8:00am, so 0:00 (midnight) is at ZT16
+    # and all times are on the half-past the hours
+    return [int(re.search("(\d+):30", time).groups()[0])+16+0.5 for time in times]
 
 def sample_timepoints(study, drop_outliers=False):
     sample_data = pandas.read_csv(f"data/{study}/sample_data.txt", sep="\t", index_col="geo_accession", dtype=str)
@@ -805,8 +810,12 @@ targets = {
         "GSE": "GSE214530",
         "tissue": "Liver",
         "sample_selector": lambda x: (x.treatment == 'Normoxia') and (x.tissue == 'Liver'),
-        #"time": lambda sample_data, expression_table: extract_ctzt(list(sample_data.loc[expression_table.columns]['time'])), unknown!!
-        # TODO: author contacted, needs to be updated
+        "time": lambda sample_data, expression_table: koritala22_time(list(sample_data.loc[expression_table.columns]['time'])),
+        "sex": "M",
+        "seeq": "PolyA",
+        "light": "DD",
+        "age_low": 9,
+        "age_high": 9,
     },
 
     "Koronowski22": {
@@ -962,6 +971,7 @@ studies = [
     # new:
     "Aviram21", "Frazier22", "Wu23",
     "Acosta-Rodriguez22A", "Acosta-Rodriguez22B", "Katsioudi22", "Astafev23", "Mezhnina22", "Koronowski22", "Petrus22", "Mekbib22A", "Mekbib22B", "Abe22",
+    "Koritala22",
     # Kidney:
     "Yeung17", "Zhang14_RNAseq_Kidney_M", "Castelo-Szekely17", "Mermet18_Kidney_NightFeed", "Mermet18_Kidney", "Xin21_Kidney_NightFeed",
     ]
