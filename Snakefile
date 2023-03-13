@@ -576,7 +576,7 @@ rule all_samples:
         all_samples = []
         for study, tpmfile in zip(params.studies, input.tpm):
             tpm = pandas.read_csv(tpmfile, sep="\t", index_col="Name")
-            time = sample_timepoints(study)
+            time = studies_config.sample_timepoints(study)
             all_samples.append(pandas.DataFrame({
             "study": [study for i in range(len(tpm.columns))],
             "time": time
@@ -645,7 +645,7 @@ rule plot_consensus_pca:
     output:
         outdir = directory("results/{tissue}/consensus_pca/")
     resources:
-        mem_mb = 4000
+        mem_mb = 6000
     script:
         "scripts/consensus_pca.py"
 
