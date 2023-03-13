@@ -503,7 +503,6 @@ rule plot_overlapped_genes:
         num_q_p_value_overlap_heatmap = "results/{tissue}/jtk{period}/num_q_pvalue_overlap_heatmap.png",
         common_genes_pvalue = "results/{tissue}/jtk{period}/common_genes_pvalue.txt",
         robustness_score = "results/{tissue}/jtk{period}/robustness_score.txt",
-        heatmap = "results/{tissue}/jtk{period}/common_genes_heatmap.png",
     resources:
         mem_mb = 4000
     script:
