@@ -747,7 +747,7 @@ targets = {
         "short_name": "Acosta-Rodríguez22A",
         "seq": "PolyA",
         "sex": "M",
-        "ligh": "DD",
+        "light": "DD",
         "age_low": 26,
         "age_high": 26,
     },
@@ -830,7 +830,7 @@ targets = {
         "sex":  "M",
         "age_low": 8,
         "age_high": 12,
-        #TODO: DD? Author contacted.
+        "light": "LD",
     },
 
     "Mekbib22A": {
