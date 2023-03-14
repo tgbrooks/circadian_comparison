@@ -791,8 +791,8 @@ rule run_compare_rhythms:
     output:
         temp("results/{tissue}/compareRhythms/results.{study1}.{study2}.txt")
     params:
-        timepoints1 = lambda wildcards: sample_timepoints(wildcards.study1),
-        timepoints2 = lambda wildcards: sample_timepoints(wildcards.study2),
+        timepoints1 = lambda wildcards: sample_timepoints(wildcards.study1, drop_outliers=True),
+        timepoints2 = lambda wildcards: sample_timepoints(wildcards.study2, drop_outliers=True),
     script:
         "scripts/run_compare_rhythms.R"
 

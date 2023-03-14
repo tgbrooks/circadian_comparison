@@ -19,9 +19,11 @@ outfile <- snakemake@output[[1]]
 timepoints1 <- snakemake@params[['timepoints1']]
 timepoints2 <- snakemake@params[['timepoints2']]
 
-print("Running compareRhythms")
+print("Preparing compareRhythms")
 print(input_file1)
 print(input_file2)
+print(snakemake@input[['outliers1']])
+print(snakemake@input[['outliers2']])
 print(outfile)
 print(timepoints1)
 print(timepoints2)
@@ -29,16 +31,28 @@ print(timepoints2)
 library(compareRhythms)
 
 # Load the two datasets and combine them
+print("Loading data")
 data1 <-  read_tsv(input_file1)
 data2 <-  read_tsv(input_file2)
 
+# Select just the non-outlier samples
+print("Loading outliers1")
+outliers1 <- read_tsv(snakemake@input[["outliers1"]], col_names = c("sample_id"))
+print("Loading outliers2")
+outliers2 <- read_tsv(snakemake@input[["outliers2"]], col_names = c("sample_id"))
+data1_outliers <- data1 %>% select(starts_with("GSM")) %>% colnames %in% outliers1$sample_id
+data2_outliers <- data2 %>% select(starts_with("GSM")) %>% colnames %in% outliers2$sample_id
+is_outlier <- c(data1_outliers, data2_outliers)
+
+# Join the two datasets together
+print("Joining data")
 joined_data <- full_join(
     data1,
     data2,
     by = "Name",
     suffix = c("_A", "_B"),
 ) %>% column_to_rownames("Name")
-print(head(joined_data))
+print(head(as.tibble(joined_data)))
 
 # Make the design matrix of time and groupings
 design <- dplyr::bind_rows(
@@ -53,24 +67,20 @@ design <- dplyr::bind_rows(
 )
 
 
-# Select just the non-outlier samples
-outliers <- read_tsv(snakemake@input[["outliers"]], col_names = c("sample_id"))
-data1_outliers <- data1 %>% select(starts_with("GSM")) %>% colnames %in% outliers$sample_id
-data2_outliers <- data2 %>% select(starts_with("GSM")) %>% colnames %in% outliers$sample_id
-is_outlier <- c(data1_outliers, data2_outliers)
-
 # Find genes with a minimum expression amount
+print("Selecting genes")
 MIN_EXPRESSION = 20 # read counts
 total_counts <- rowSums(joined_data %>% select(starts_with("GSM")))
 selected_genes <- total_counts > MIN_EXPRESSION
 
 # Get just the parts of the data that we care about
 selected_data <- as.matrix(joined_data[selected_genes, !is_outlier])
-selected_design <- design[!is_outlier,]
+selected_design <- design # We already have dropped outliers
 print(head(selected_data))
 print(selected_design)
 
 # Run with default period range
+print("Running compareRhythms")
 res <- compareRhythms(
     selected_data,
     selected_design,

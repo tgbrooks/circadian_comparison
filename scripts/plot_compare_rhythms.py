@@ -113,7 +113,7 @@ def plot_overlaps(ax, x,y, just1, just2, both, scale):
 # Plot - showing squares of mini 'venn diagrams'
 LEGEND_GAP = 1
 LEGEND_SPACE = 4
-fig, ax = pylab.subplots(figsize=(8,8), constrained_layout = True)
+fig, ax = pylab.subplots(figsize=(9,9), constrained_layout = True)
 for (study1, study2), data in wide.iterrows():
     i = study_order[study1]
     j = study_order[study2]
