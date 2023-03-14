@@ -812,7 +812,7 @@ targets = {
         "sample_selector": lambda x: (x.treatment == 'Normoxia') and (x.tissue == 'Liver'),
         "time": lambda sample_data, expression_table: koritala22_time(list(sample_data.loc[expression_table.columns]['time'])),
         "sex": "M",
-        "seeq": "PolyA",
+        "seq": "PolyA",
         "light": "DD",
         "age_low": 9,
         "age_high": 9,
