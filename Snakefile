@@ -10,8 +10,7 @@ from studies import targets, studies, sample_timepoints, select_tissue, studies_
 def sample_timepoints(study, **kwargs):
     # Force checkpoint checking...
     output = checkpoints.split_samples.get(study=study).output[0]
-    tissue = targets[study]['tissue']
-    output = checkpoints.outlier_detection.get(tissue=tissue).output[0]
+    output = checkpoints.outlier_detection.get(study=study).output[0]
     return studies_config.sample_timepoints(study, **kwargs)
 
 tissues = ["Liver"]
@@ -287,7 +286,7 @@ rule prep_jtk:
     input:
         tpm = "data/{study}/expression.tpm.txt",
         sample_data = "data/{study}/sample_data.txt",
-        outliers = lambda wildcards: f"results/{targets[wildcards.study]['tissue']}/outlier_samples.txt",
+        outliers = "data/{study}/outlier_samples.txt",
     output:
         tpm = temp("data/{study}/expression.tpm.for_JTK.txt")
     run:
@@ -304,7 +303,7 @@ rule run_jtk:
         "data/{study}/sample_data.txt",
         "data/{study}/expression.tpm.txt",
         lambda wildcards: checkpoints.split_samples.get(study=wildcards.study).output[0], # Trigger checkpoint
-        outliers = lambda wildcards: f"results/{targets[wildcards.study]['tissue']}/outlier_samples.txt",
+        outliers = "data/{study}/outlier_samples.txt",
     output:
         "data/{study}/jtk{period}/JTKresult_expression.tpm.for_JTK.txt"
     params:
@@ -563,12 +562,17 @@ rule all_samples:
     input:
         tpm = lambda wildcards: expand("data/{study}/expression.tpm.txt", study=studies_by_tissue(wildcards.tissue)),
         num_reads = lambda wildcards: expand("data/{study}/expression.num_reads.txt", study=studies_by_tissue(wildcards.tissue)),
+        outliers = lambda wildcards: expand("data/{study}/outlier_samples.txt", study=studies_by_tissue(wildcards.tissue)),
     params:
         studies = select_tissue(studies),
     output:
         tpm = "results/{tissue}/tpm_all_samples.txt",
+        tpm_parquet = "results/{tissue}/tpm_all_samples.parquet",
         num_reads = "results/{tissue}/num_reads_all_samples.txt",
+        num_reads_parquet = "results/{tissue}/num_reads_all_samples.parquet",
         sample_info = "results/{tissue}/all_samples_info.txt",
+    resources:
+        mem_mb = 6_000,
     run:
         all_tpm = pandas.DataFrame()
         all_num_reads = pandas.DataFrame()
@@ -582,16 +586,19 @@ rule all_samples:
             }, index=tpm.columns))
             all_tpm = pandas.concat([all_tpm, tpm], axis=1)
         all_tpm.insert(0, 'Symbol', pandas.read_csv("gene_name.txt", sep="\t", index_col="ID")['GeneSymbol'])
-        all_tpm.to_csv(output[0], sep ="\t", index="Name")
+        all_tpm.to_csv(output.tpm, sep ="\t", index="Name")
+        all_tpm.to_parquet(output.tpm_parquet)
+
         all_samples_concat = pandas.concat(all_samples, axis=0)
         all_samples_df = pandas.DataFrame(all_samples_concat)
-        all_samples_df.to_csv(output[2], sep="\t")
+        all_samples_df.to_csv(output.sample_info, sep="\t")
 
         for study, numreadsfile in zip(params.studies, input.num_reads):
             num_reads = pandas.read_csv(numreadsfile, sep="\t", index_col="Name")
             all_num_reads = pandas.concat([all_num_reads, num_reads], axis=1)
         all_num_reads.insert(0, 'Symbol', pandas.read_csv("gene_name.txt", sep="\t", index_col="ID")['GeneSymbol'])
-        all_num_reads.to_csv(output[1], sep ="\t", index="Name")
+        all_num_reads.to_csv(output.num_reads, sep ="\t", index="Name")
+        all_num_reads.to_csv(output.num_reads_parquet)
 
 rule all_jtk: # Gather all JTK results of a tissue together
     input:
@@ -616,12 +623,19 @@ checkpoint outlier_detection:
     # NOTE: this wouldn't normally have to be a checkpoint but we want to read its outputs
     # in params and therefore we make it a checkpoint
     input:
-        tpm = "results/{tissue}/tpm_all_samples.txt",
-        sample_info = "results/{tissue}/all_samples_info.txt",
+        tpm = "data/{study}/expression.tpm.txt",
     output:
-        outliers = "results/{tissue}/outlier_samples.txt",
+        outliers = "data/{study}/outlier_samples.txt",
     script:
         "scripts/outlier_detection.py"
+
+rule gather_outliers:
+    input:
+        lambda wildcards: expand("data/{study}/outlier_samples.txt", study=studies_by_tissue(wildcards.tissue))
+    output:
+        "results/{tissue}/outlier_samples.txt"
+    shell:
+        "cat {input} > {output}"
 
 rule scatter_grid:
     input:
@@ -770,7 +784,8 @@ rule run_compare_rhythms:
         "data/{study1}/expression.tpm.txt",
         "data/{study2}/sample_data.txt",
         "data/{study2}/expression.tpm.txt",
-        outliers = "results/{tissue}/outlier_samples.txt",
+        outliers1 = "data/{study1}/outlier_samples.txt",
+        outliers2 = "data/{study2}/outlier_samples.txt",
         split_samples1 = lambda wildcards: checkpoints.split_samples.get(study=wildcards.study1).output[0], # Trigger checkpoint
         split_samples2 = lambda wildcards: checkpoints.split_samples.get(study=wildcards.study2).output[0], # Trigger checkpoint
     output:

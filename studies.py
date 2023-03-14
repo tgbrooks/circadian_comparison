@@ -27,7 +27,7 @@ def sample_timepoints(study, drop_outliers=False):
     times = targets[study]["time"](sample_data, expression_table)
     assert all(isinstance(x, (int, float)) for x in times), f"In {study}, not all timepoints were integers: {times=}"
     if drop_outliers:
-        outlier_samples = [x.strip() for x in open(f"results/{targets[study]['tissue']}/outlier_samples.txt").readlines()]
+        outlier_samples = [x.strip() for x in open(f"data/{study}/outlier_samples.txt").readlines()]
         return list(time for time, sample in zip(times, expression_table.columns) if sample not in outlier_samples)
     return times
 
