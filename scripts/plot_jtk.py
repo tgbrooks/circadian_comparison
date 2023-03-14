@@ -12,7 +12,8 @@ import util
 from styles import format_study_name, color_by_sex, color_by_light
 from studies import targets as study_info
 
-studies = snakemake.params.studies
+# Order studies alphabetically
+studies = sorted(snakemake.params.studies, key = lambda x: study_info[x]['short_name'])
 N_studies = len(studies)
 
 robustness_score = pandas.read_csv(snakemake.input.robustness_score, sep="\t", index_col=0)['0']
