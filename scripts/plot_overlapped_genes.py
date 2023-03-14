@@ -108,4 +108,15 @@ for study, jtkfile in zip(studies, snakemake.input.jtk):
     jtk = pandas.read_csv(jtkfile, sep="\t", index_col=0)
     selected_genes[study] = jtk.index[(jtk["ADJ.P"]<p_value_cutoff) & (~jtk.dropped)]
 
+# Find intersection and robustness scores of all studies
 robustness_score = pandas.Series(0, index=jtk.index)
+intersection = selected_genes[studies[2]]
+for study in selected_genes.keys():
+    genes = selected_genes[study]
+    intersection = intersection.intersection(genes)
+    robustness_score[genes] += 1
+robustness_score.to_csv(snakemake.output.robustness_score, sep="\t")
+
+gene_name_from_id = pandas.read_csv("gene_name.txt", sep="\t", index_col="ID")['GeneSymbol']
+intersect_DF = pandas.DataFrame({"GeneID":intersection, "GeneSymbol":intersection.map(gene_name_from_id)})
+intersect_DF.to_csv(snakemake.output.common_genes_pvalue, sep="\t", index=False)
