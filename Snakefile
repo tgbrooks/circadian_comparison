@@ -600,7 +600,7 @@ rule all_samples:
             all_num_reads = pandas.concat([all_num_reads, num_reads], axis=1)
         all_num_reads.insert(0, 'Symbol', pandas.read_csv("gene_name.txt", sep="\t", index_col="ID")['GeneSymbol'])
         all_num_reads.to_csv(output.num_reads, sep ="\t", index="Name")
-        all_num_reads.to_csv(output.num_reads_parquet)
+        all_num_reads.to_parquet(output.num_reads_parquet)
 
 rule all_jtk: # Gather all JTK results of a tissue together
     input:
