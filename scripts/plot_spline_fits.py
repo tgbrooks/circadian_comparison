@@ -73,7 +73,7 @@ for gene, name in zip(genes, names):
     # and with the overall fit ontop
     ncols = 7
     nrows = math.ceil(len(studies) / ncols)
-    fig, axes = pylab.subplots(figsize=(12,10), nrows=nrows, ncols=ncols, sharex=True, sharey=True)
+    fig, axes = pylab.subplots(figsize=(12,12), nrows=nrows, ncols=ncols, sharex=True, sharey=True)
     for study, ax in zip(studies, axes.flatten()):
         study_samples = sample_info.index[sample_info.study == study]
         study_tpm = tpm.loc[gene, study_samples]
@@ -91,13 +91,24 @@ for gene, name in zip(genes, names):
         ax.set_xticks([0,6,12,18,24])
     for ax in axes[:,0]:
         ax.set_ylabel("log TPM")
-    for ax in axes[-1,:]:
-        ax.set_xlabel("Time")
+    for col in range(ncols):
+        # Label the x axis, taking into account how there may be
+        # ragged columns and so sometimes we need to label the second
+        # to bottom row
+        overhang = len(studies) % ncols # num cols on bottom row
+        in_last_row = (overhang > col) or (overhang == 0)
+        if in_last_row:
+            row_idx = nrows - 1
+        else:
+            row_idx = max(0, nrows - 2)
+        axes[row_idx,col].xaxis.set_tick_params(labelbottom=True)
+        axes[row_idx,col].set_xlabel("Time")
     for ax in axes.flatten()[len(studies):]:
         ax.remove()
     fig.suptitle(f"{gene} | {name}")
     fig.tight_layout()
     fig.savefig(snakemake.output.gene_plot_dir+f"/{gene}.by_study.png", dpi=DPI)
+    fig.savefig(snakemake.output.gene_plot_dir+f"/{gene}.by_study.svg")
     pylab.close(fig)
 
 # Plot the phase distributions

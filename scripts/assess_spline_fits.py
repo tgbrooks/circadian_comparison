@@ -32,17 +32,6 @@ curves_pstd = pandas.read_csv(snakemake.input.curves_pstd, sep="\t", index_col=0
 re = pandas.read_csv(snakemake.input.re, sep="\t", index_col=0) # random effects
 re_structure = pandas.read_csv(snakemake.input.re_structure, sep="\t", index_col=0)
 
-### TODO DROP THIS ###
-# JUST FOR TESTING ###
-# ONLY USE A FEW GENES
-just_use = list(summary.head(100).index)
-summary = summary.loc[just_use]
-curves = curves.loc[just_use]
-curves_pstd = curves_pstd.loc[just_use]
-re = re.loc[just_use]
-re_structure = re_structure.loc[just_use]
-######################
-
 #num_zeros = (tpm == 0).sum(axis=1)
 summary['median_t'] =  (curves.abs()/curves_pstd).median(axis=1)
 summary['rel_amp'] = summary['fit_amplitude'] / summary['sigma']
@@ -167,7 +156,7 @@ print(num_peaks)
 summary['num_peaks'] = summary.index.map(num_peaks).fillna(0)
 print(f"Num peaks is {summary.num_peaks.head()}")
 summary['category'] = 'symmetric'
-summary.loc[summary.index.map(asymmetric).fillna(False), 'category'] = 'asymmetric'
+summary.loc[summary.index.map(asymmetric).fillna(0.0).astype(bool), 'category'] = 'asymmetric'
 summary.loc[summary.num_peaks > 1, 'category'] = 'multimodal'
 summary.loc[~summary.is_rhythmic, 'category'] = 'nonrythmic'
 print(f"Number of rhythmic genes by category:\n{summary.category.value_counts()}")
