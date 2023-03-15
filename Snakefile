@@ -563,8 +563,10 @@ rule all_samples:
         tpm = lambda wildcards: expand("data/{study}/expression.tpm.txt", study=studies_by_tissue(wildcards.tissue)),
         num_reads = lambda wildcards: expand("data/{study}/expression.num_reads.txt", study=studies_by_tissue(wildcards.tissue)),
         outliers = lambda wildcards: expand("data/{study}/outlier_samples.txt", study=studies_by_tissue(wildcards.tissue)),
+        split_flags = lambda wildcards: expand("data/{study}/samples/split_flag", study=studies_by_tissue(wildcards.tissue)),
     params:
         studies = select_tissue(studies),
+        timepoints = lambda wildcards: [sample_timepoints(study) for study in studies_by_tissue(wildcards.tissue)],
     output:
         tpm = "results/{tissue}/tpm_all_samples.txt",
         tpm_parquet = "results/{tissue}/tpm_all_samples.parquet",
