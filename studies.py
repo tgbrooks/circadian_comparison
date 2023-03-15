@@ -17,9 +17,9 @@ def hirako18_time(times):
     # (Or equivalently we could subtract 7 from the hour to get the ZT time)
     return [int(re.search("(\d+)", time).groups()[0])+17 for time in times]
 def koritala22_time(times):
-    # Times are in clock time with ZT0 = 8:00am, so 0:00 (midnight) is at ZT16
+    # Times are in clock time with ZT0 = 0:00am
     # and all times are on the half-past the hours
-    return [int(re.search("(\d+):30", time).groups()[0])+16+0.5 for time in times]
+    return [int(re.search("(\d+):30", time).groups()[0])+0.5 for time in times]
 
 def sample_timepoints(study, drop_outliers=False):
     sample_data = pandas.read_csv(f"data/{study}/sample_data.txt", sep="\t", index_col="geo_accession", dtype=str)
