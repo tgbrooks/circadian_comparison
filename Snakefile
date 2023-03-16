@@ -836,6 +836,8 @@ rule plot_compare_rhythms:
         all_jtk = "results/{tissue}/jtk24.results.txt",
     output:
         outdir = directory("results/{tissue}/compareRhythms/plots/")
+    resources:
+        mem_mb = 6_000
     script:
         "scripts/plot_compare_rhythms.py"
 
