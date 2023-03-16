@@ -349,8 +349,9 @@ rule prep_bootejtk:
     input:
         tpm = "data/{study}/expression.tpm.txt",
         sample_data = "data/{study}/sample_data.txt",
-        outliers = lambda wildcards: f"results/{targets[wildcards.study]['tissue']}/outlier_samples.txt",
-        split_samples = lambda wildcards: checkpoints.split_samples.get(study=wildcards.study).output[0], # Trigger checkpoint
+        outliers = "data/{study}/outlier_samples.txt",
+        split_samples = "data/{study}/samples/split_flag",
+        split_samples_ = lambda wildcards: checkpoints.split_samples.get(study=wildcards.study).output[0], # Trigger checkpoint
     output:
         tpm = temp("data/{study}/bootejtk/expression.tpm.for_BooteJTK.txt",)
     params:
