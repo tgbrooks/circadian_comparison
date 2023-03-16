@@ -148,7 +148,8 @@ rule download_sra_files:
 
 rule extract_fastq:
     input:
-        "data/{study}/SRA/{sample}"
+        "data/{study}/SRA/{sample}",
+        "data/{study}/samples/split_flag",
     output:
         temp(directory("data/{study}/fastq/{sample}"))
     priority: 10
@@ -161,6 +162,7 @@ rule extract_fastq:
 rule trim_adapators:
     input:
         "data/{study}/fastq/{sample}/",
+        "data/{study}/samples/split_flag",
     output:
         temp(directory("data/{study}/fastq_trimmed/{sample}")),
     params:
@@ -185,7 +187,8 @@ rule generate_salmon_index:
 rule run_salmon:
     input:
         lambda wildcards: "data/{study}/fastq_trimmed/{sample}" if targets[wildcards.study].get("trim_adaptor", False) else "data/{study}/fastq/{sample}",
-        "index/mouse_k31"
+        "index/mouse_k31",
+        "data/{study}/samples/split_flag",
     output:
         "data/{study}/salmon/{sample}/quant.genes.sf",
         directory("data/{study}/salmon/{sample}")
@@ -217,7 +220,8 @@ def all_salmon_output(wildcards):
 
 rule aggregate_expression_values:
     input:
-        all_salmon_output
+        all_salmon_output,
+        "data/{study}/samples/split_flag",
     output:
         "data/{study}/expression.tpm.txt",
         "data/{study}/expression.num_reads.txt",
@@ -302,6 +306,7 @@ rule run_jtk:
         "data/{study}/expression.tpm.for_JTK.txt",
         "data/{study}/sample_data.txt",
         "data/{study}/expression.tpm.txt",
+        "data/{study}/samples/split_flag",
         lambda wildcards: checkpoints.split_samples.get(study=wildcards.study).output[0], # Trigger checkpoint
         outliers = "data/{study}/outlier_samples.txt",
     output:
@@ -564,6 +569,8 @@ rule all_samples:
         num_reads = lambda wildcards: expand("data/{study}/expression.num_reads.txt", study=studies_by_tissue(wildcards.tissue)),
         outliers = lambda wildcards: expand("data/{study}/outlier_samples.txt", study=studies_by_tissue(wildcards.tissue)),
         split_flags = lambda wildcards: expand("data/{study}/samples/split_flag", study=studies_by_tissue(wildcards.tissue)),
+        split_samples = lambda wildcards: [checkpoints.split_samples.get(study=study).output[0] for study in studies_by_tissue(wildcards.tissue)], # Trigger checkpoint
+        outliers_ = lambda wildcards: [checkpoints.outlier_detection.get(study=study).output[0] for study in studies_by_tissue(wildcards.tissue)], # Trigger checkpoint
     params:
         studies = select_tissue(studies),
         timepoints = lambda wildcards: [sample_timepoints(study) for study in studies_by_tissue(wildcards.tissue)],
