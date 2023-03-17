@@ -17,7 +17,7 @@ studies = sorted(snakemake.params.studies, key = lambda x: study_info[x]['short_
 N_studies = len(studies)
 
 robustness_score = pandas.read_csv(snakemake.input.robustness_score, sep="\t", index_col=0)['0']
-highly_robust_genes = robustness_score.index[robustness_score >= 30]
+highly_robust_genes = robustness_score.index[robustness_score >= 35]
 
 jtk_period = snakemake.wildcards.period
 if jtk_period == '':
@@ -125,16 +125,10 @@ phase_types = {
 }
 for phase_type, phases_of_type in phase_types.items():
     plot_studies = sorted(studies, key=lambda x: study_info[x]['short_name'])
-    fig, axes = pylab.subplots(
-            figsize=(10,10),
-            sharey=True,
-            ncols=4,
-            gridspec_kw=dict(
-                width_ratios = (2, 2, 1, len(bins)-1),
-            ),
+    fig, main_ax = pylab.subplots(
+            figsize=(6,9),
             constrained_layout=True
     )
-    (label_ax, age_ax, num_sig_ax, main_ax) = axes
     density_by_study = numpy.zeros(shape=(len(plot_studies), len(bins)-1))
     num_sig_by_study = numpy.zeros((len(plot_studies),1))
     for i, study in enumerate(plot_studies):
@@ -157,45 +151,19 @@ for phase_type, phases_of_type in phase_types.items():
     main_ax.set_xticks(time_labels-0.5)
     main_ax.set_xticklabels([str(x) for x in time_labels])
     main_ax.set_xlabel("Phase (hrs)")
-    # study info values
-    label_ax.imshow(
-        [[
-            color_by_sex[study_info[study]['sex']],
-            color_by_light[study_info[study]['light']],
-            ]
-            for study in plot_studies],
-    )
-    label_ax.set_xticks([0,1])
-    label_ax.set_xticklabels(['sex', 'light'], rotation=90)
-    label_ax.set_yticks(numpy.arange(len(plot_studies)))
-    label_ax.set_yticklabels([study_info[study]['short_name'] for study in plot_studies])
-    # Age axis
-    h3 = age_ax.imshow(
-        [[
-            study_info[study]['age_low'],
-            study_info[study]['age_high'],
-        ] for study in plot_studies],
-        cmap = "plasma",
-    )
-    age_ax.set_xticks([0,1])
-    age_ax.set_xticklabels(['age low', 'age high'], rotation=90)
-    # Num sig axis
-    h2 = num_sig_ax.imshow(
-            num_sig_by_study,
-            cmap = "inferno",
-            norm = matplotlib.colors.SymLogNorm(linthresh=1),
-    )
-    num_sig_ax.set_xticks([0])
-    num_sig_ax.set_xticklabels(['num. rhythmic'], rotation=90)
+    main_ax.set_yticks(numpy.arange(len(plot_studies)))
+    main_ax.set_yticklabels([study_info[study]['short_name'] for study in plot_studies])
+
     #Colorbars + legend
-    fig.colorbar(h2, ax=axes, label="Num. Rhythmic", fraction=0.025)
-    fig.colorbar(h, ax=axes, label="Phase Density", fraction=0.025)
-    fig.colorbar(h3, ax=axes, label="Age (weeks)", fraction=0.025)
-    util.legend_from_colormap(
-        fig = fig,
-        colormap = {k:c for k,c in {**color_by_sex, **color_by_light}.items()
-                        if k != 'unknown'},
-    )
+    fig.colorbar(h, ax=main_ax, label="Phase Density", fraction=0.025)
+
+    if phase_types == 'loose':
+        # Number of rhythmic genes labels
+        dupe_ax = ax.secondary_yaxis("right")
+        dupe_ax.set_yticks(numpy.arange(len(plot_studies)))
+        dupe_ax.set_yticklabels(num_sig_by_study)
+        dupe_ax.set_ylabel("Num. Rhythmic")
+
     fig.savefig(f"results/{snakemake.wildcards.tissue}/jtk{snakemake.wildcards.period}/phases.heatmap.{phase_type}.png", dpi=DPI)
     fig.savefig(f"results/{snakemake.wildcards.tissue}/jtk{snakemake.wildcards.period}/phases.heatmap.{phase_type}.svg")
 
