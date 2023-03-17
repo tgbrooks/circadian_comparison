@@ -410,7 +410,7 @@ rule run_bootejtk:
     shell:
         # Note that the output file name depends upon the number of replicates, which has to vary from one study to the next. Therefore
         # we copy the output to a standardized output name
-        "apptainer run --bind {WORKING_DIR} {BOOTEJTK_SIF} /BooteJTK/BooteJTK-CalcP.py -f {input[0]} -p /BooteJTK/ref_files/period24.txt -s /BooteJTK/ref_files/phases_00-22_by2.txt -a /BooteJTK/ref_files/asymmetries_02-22_by2.txt -z 25 -r {params.num_reps} -R {params.args} -x OUT && cp data/{wildcards.study}/bootejtk/expression.tpm.for_BooteJTK_{params.out_file_prefix}_OUT_boot25-rep{params.num_reps}_GammaP.txt {output}"
+        "apptainer run --bind {WORKING_DIR} {BOOTEJTK_SIF} /BooteJTK/BooteJTK-CalcP.py -f {input[1]} -p /BooteJTK/ref_files/period24.txt -s /BooteJTK/ref_files/phases_00-22_by2.txt -a /BooteJTK/ref_files/asymmetries_02-22_by2.txt -z 25 -r {params.num_reps} -R {params.args} -x OUT && cp data/{wildcards.study}/bootejtk/expression.tpm.for_BooteJTK_{params.out_file_prefix}_OUT_boot25-rep{params.num_reps}_GammaP.txt {output}"
 
 rule plot_qc:
     input:
