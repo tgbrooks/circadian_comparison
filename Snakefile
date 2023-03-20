@@ -412,6 +412,23 @@ rule run_bootejtk:
         # we copy the output to a standardized output name
         "apptainer run --bind {WORKING_DIR} {BOOTEJTK_SIF} /BooteJTK/BooteJTK-CalcP.py -f {input[1]} -p /BooteJTK/ref_files/period24.txt -s /BooteJTK/ref_files/phases_00-22_by2.txt -a /BooteJTK/ref_files/asymmetries_02-22_by2.txt -z 25 -r {params.num_reps} -R {params.args} -x OUT && cp data/{wildcards.study}/bootejtk/expression.tpm.for_BooteJTK_{params.out_file_prefix}_OUT_boot25-rep{params.num_reps}_GammaP.txt {output}"
 
+rule gather_bootejtk:
+    input:
+        bootejtk = lambda wildcards: expand("data/{study}/bootejtk/results.txt", study = studies_by_tissue(wildcards.tissue)),
+    output:
+       "results/{tissue}/bootejtk.results.txt",
+    resources:
+        mem_mb = 6_000,
+    run:
+        import pandas
+        res = []
+        for study in studies_by_tissue(wildcards.tissue):
+            bootejtk = pandas.read_csv(f"data/{study}/bootejtk/results.txt", sep="\t")
+            bootejtk.insert(0, 'study', study)
+            res.append(bootejtk)
+        res = pandas.concat(res)
+        res.to_csv(output[0], sep="\t", index=False)
+
 rule plot_qc:
     input:
         salmon_metainfo = lambda wildcards: expand("data/{study}/salmon.meta_info.json", study=studies_by_tissue(wildcards.tissue)),
@@ -492,6 +509,15 @@ rule plot_jtk:
         phase_heatmap_svg_robust = "results/{tissue}/jtk{period}/phases.heatmap.robust.svg",
     script:
         "scripts/plot_jtk.py"
+
+rule plot_bootejtk:
+    input:
+        bootejtk = "results/{tissue}/bootejtk.results.txt",
+        robustness_score = "results/{tissue}/jtk24/robustness_score.txt",
+    output:
+        outdir = directory("results/{tissue}/bootejtk/"),
+    script:
+        "scripts/plot_bootejtk.py"
 
 rule plot_overlapped_genes:
     input:
@@ -835,6 +861,7 @@ rule plot_compare_rhythms:
     input:
         summary = "results/{tissue}/compareRhythms/summary.txt",
         all_jtk = "results/{tissue}/jtk24.results.txt",
+        all_bootejtk = "results/{tissue}/bootejtk.results.txt",
     output:
         outdir = directory("results/{tissue}/compareRhythms/plots/")
     resources:

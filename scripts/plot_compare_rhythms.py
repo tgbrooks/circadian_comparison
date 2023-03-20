@@ -55,9 +55,42 @@ for study1, data1 in jtk.groupby("study"):
 jtk_overlaps = pandas.DataFrame(jtk_overlaps).set_index(['study1', 'study2'])
 jtk_overlaps['total'] = jtk_overlaps['both'] + jtk_overlaps['just1'] + jtk_overlaps['just2']
 print(jtk_overlaps.head())
-
 # Compute the scaling
-scale = max(total.max(), jtk_overlaps['total'].max())
+jtk_scale = max(total.max(), jtk_overlaps['total'].max())
+
+# Load BooteJTK and calculate overlaps
+bootejtk = pandas.read_csv(snakemake.input.all_bootejtk, sep="\t")
+bootejtk['significant'] = bootejtk['GammaBH'] < 0.05
+bootejtk_overlaps = []
+for study1, data1 in bootejtk.groupby("study"):
+    sig1 = set(data1.query('significant').ID)
+    for study2, data2 in bootejtk.groupby("study"):
+        if study1 == study2:
+            continue
+        sig2 = set(data2.query('significant').ID)
+        bootejtk_overlaps.append({
+            "study1": study1,
+            "study2": study2,
+            "both": len(sig1.intersection(sig2)),
+            "just1": len(sig1.difference(sig2)),
+            "just2": len(sig2.difference(sig1)),
+        })
+bootejtk_overlaps = pandas.DataFrame(bootejtk_overlaps).set_index(['study1', 'study2'])
+bootejtk_overlaps['total'] = bootejtk_overlaps['both'] + bootejtk_overlaps['just1'] + bootejtk_overlaps['just2']
+print(bootejtk_overlaps.head())
+# Compute the scaling
+bootejtk_scale = max(total.max(), bootejtk_overlaps['total'].max())
+
+METHOD_OVERLAPS = {
+    "JTK": jtk_overlaps,
+    "BooteJTK": bootejtk_overlaps,
+}
+
+METHOD_SCALE = {
+    "JTK": jtk_scale,
+    "BooteJTK": bootejtk_scale,
+}
+
 
 def plot_overlaps(ax, x,y, just1, just2, both, scale):
     # Draw a Venn diagram as rectangles
@@ -110,64 +143,66 @@ def plot_overlaps(ax, x,y, just1, just2, both, scale):
     ax.add_patch(just1_rect)
     ax.add_patch(just2_rect)
 
-# Plot - showing squares of mini 'venn diagrams'
-LEGEND_GAP = 1
-LEGEND_SPACE = 4
-fig, ax = pylab.subplots(figsize=(9,9), constrained_layout = True)
-for (study1, study2), data in wide.iterrows():
-    i = study_order[study1]
-    j = study_order[study2]
-    if i > j:
-        # Plot the compareRhythms overlaps below diagonal
-        tot = total.loc[(study1, study2)]
-        both = both_rhythmic.loc[(study1, study2)]
-        one = one_rhythmic.loc[(study1, study2)]
-        just1 = wide['loss'].loc[(study1, study2)]
-        just2 = wide['gain'].loc[(study1, study2)]
+for method in ['JTK', 'BooteJTK']:
+    scale = METHOD_SCALE[method]
+    # Plot - showing squares of mini 'venn diagrams'
+    LEGEND_GAP = 1
+    LEGEND_SPACE = 4
+    fig, ax = pylab.subplots(figsize=(9,9), constrained_layout = True)
+    for (study1, study2), data in wide.iterrows():
+        i = study_order[study1]
+        j = study_order[study2]
+        if i > j:
+            # Plot the compareRhythms overlaps below diagonal
+            tot = total.loc[(study1, study2)]
+            both = both_rhythmic.loc[(study1, study2)]
+            one = one_rhythmic.loc[(study1, study2)]
+            just1 = wide['loss'].loc[(study1, study2)]
+            just2 = wide['gain'].loc[(study1, study2)]
 
-        plot_overlaps(ax, i, j, just1, just2, both, scale)
-    else:
-        # Plot the JTK overlaps above diagonal
-        df = jtk_overlaps.loc[(study1, study2)]
-        both = df['both']
-        just1 = df['just1']
-        just2 = df['just2']
-        plot_overlaps(ax, i, j, just1, just2, both, scale)
+            plot_overlaps(ax, i, j, just1, just2, both, scale)
+        else:
+            # Plot the JTK overlaps above diagonal
+            df = METHOD_OVERLAPS[method].loc[(study1, study2)]
+            both = df['both']
+            just1 = df['just1']
+            just2 = df['just2']
+            plot_overlaps(ax, i, j, just1, just2, both, scale)
 
-ax.spines['top'].set_visible(False)
-ax.spines['right'].set_visible(False)
-ax.spines['bottom'].set_visible(False)
-ax.spines['left'].set_visible(False)
-ax.set_aspect(1.0)
-ax.set_xlim(0, len(study_order) + LEGEND_SPACE)
-ax.set_ylim(0, len(study_order) + 2)
-ax.set_xticks( np.arange(len(study_order))+0.5)
-ax.set_xticklabels(
-    labels=[study_info[study]['short_name'] for study in study_order.keys()],
-    rotation=90
-)
-ax.set_yticks( np.arange(len(study_order))+0.5)
-ax.set_yticklabels(
-    labels=[study_info[study]['short_name'] for study in study_order.keys()],
-)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['bottom'].set_visible(False)
+    ax.spines['left'].set_visible(False)
+    ax.set_aspect(1.0)
+    ax.set_xlim(0, len(study_order) + LEGEND_SPACE)
+    ax.set_ylim(0, len(study_order) + 2)
+    ax.set_xticks( np.arange(len(study_order))+0.5)
+    ax.set_xticklabels(
+        labels=[study_info[study]['short_name'] for study in study_order.keys()],
+        rotation=90
+    )
+    ax.set_yticks( np.arange(len(study_order))+0.5)
+    ax.set_yticklabels(
+        labels=[study_info[study]['short_name'] for study in study_order.keys()],
+    )
 
-# Manually drawn legend
-x = LEGEND_GAP + len(study_order)
-y = (len(study_order) -6*2) / 2
-ax.add_patch(matplotlib.patches.Rectangle([x,y - np.sqrt(500/scale)/2], np.sqrt(500/scale), np.sqrt(500/scale), color="black"))
-ax.add_patch(matplotlib.patches.Rectangle([x,y+2 - np.sqrt(2000/scale)/2], np.sqrt(2000/scale), np.sqrt(2000/scale), color="black"))
-ax.add_patch(matplotlib.patches.Rectangle([x,y+4 - np.sqrt(5000/scale)/2], np.sqrt(5000/scale), np.sqrt(5000/scale), color="black"))
-ax.add_patch(matplotlib.patches.Rectangle([x,y+6 - np.sqrt(5000/scale)/2], np.sqrt(5000/scale), np.sqrt(5000/scale), color=BOTH_COLOR))
-ax.add_patch(matplotlib.patches.Rectangle([x,y+8 - np.sqrt(5000/scale)/2], np.sqrt(5000/scale), np.sqrt(5000/scale), color=JUST_LEFT_COLOR))
-ax.add_patch(matplotlib.patches.Rectangle([x,y+10 - np.sqrt(5000/scale)/2], np.sqrt(5000/scale), np.sqrt(5000/scale), color=JUST_BOTTOM_COLOR))
-ax.annotate("500 genes", [x+0.5,y], xytext = (5,0), textcoords='offset points', va="center")
-ax.annotate("2000 genes", [x+0.5,y+2], xytext = (5,0), textcoords='offset points', va="center")
-ax.annotate("5000 genes", [x+0.5,y+4], xytext = (5,0), textcoords='offset points', va="center")
-ax.annotate("both", [x+0.5,y+6], xytext = (5,0), textcoords='offset points', va="center")
-ax.annotate("just left", [x+0.5,y+8], xytext = (5,0), textcoords='offset points', va="center")
-ax.annotate("just bottom", [x+0.5,y+10], xytext = (5,0), textcoords='offset points', va="center")
+    # Manually drawn legend
+    x = LEGEND_GAP + len(study_order)
+    y = (len(study_order) -6*2) / 2
+    ax.add_patch(matplotlib.patches.Rectangle([x,y - np.sqrt(500/scale)/2], np.sqrt(500/scale), np.sqrt(500/scale), color="black"))
+    ax.add_patch(matplotlib.patches.Rectangle([x,y+2 - np.sqrt(2000/scale)/2], np.sqrt(2000/scale), np.sqrt(2000/scale), color="black"))
+    ax.add_patch(matplotlib.patches.Rectangle([x,y+4 - np.sqrt(5000/scale)/2], np.sqrt(5000/scale), np.sqrt(5000/scale), color="black"))
+    ax.add_patch(matplotlib.patches.Rectangle([x,y+6 - np.sqrt(5000/scale)/2], np.sqrt(5000/scale), np.sqrt(5000/scale), color=BOTH_COLOR))
+    ax.add_patch(matplotlib.patches.Rectangle([x,y+8 - np.sqrt(5000/scale)/2], np.sqrt(5000/scale), np.sqrt(5000/scale), color=JUST_LEFT_COLOR))
+    ax.add_patch(matplotlib.patches.Rectangle([x,y+10 - np.sqrt(5000/scale)/2], np.sqrt(5000/scale), np.sqrt(5000/scale), color=JUST_BOTTOM_COLOR))
+    ax.annotate("500 genes", [x+0.5,y], xytext = (5,0), textcoords='offset points', va="center")
+    ax.annotate("2000 genes", [x+0.5,y+2], xytext = (5,0), textcoords='offset points', va="center")
+    ax.annotate("5000 genes", [x+0.5,y+4], xytext = (5,0), textcoords='offset points', va="center")
+    ax.annotate("both", [x+0.5,y+6], xytext = (5,0), textcoords='offset points', va="center")
+    ax.annotate("just left", [x+0.5,y+8], xytext = (5,0), textcoords='offset points', va="center")
+    ax.annotate("just bottom", [x+0.5,y+10], xytext = (5,0), textcoords='offset points', va="center")
 
-# Label JTK/compareRhythms sections
-ax.annotate("JTK rhythmic", [len(study_order), len(study_order)+1], va="center", ha="right")
-ax.annotate("compareRhythms", [len(study_order)+1, len(study_order)], va="top", ha="center", rotation=90)
-fig.savefig(outdir / "grid.png", dpi=300)
+    # Label JTK/compareRhythms sections
+    ax.annotate(f"{method} rhythmic", [len(study_order), len(study_order)+1], va="center", ha="right")
+    ax.annotate("compareRhythms", [len(study_order)+1, len(study_order)], va="top", ha="center", rotation=90)
+    fig.savefig(outdir / f"grid.{method}.png", dpi=300)
