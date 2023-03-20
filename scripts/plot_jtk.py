@@ -29,7 +29,7 @@ DPI = 300
 N_COLUMNS = 3
 # Q-value cutoff to call significantly rhythmic
 Q_CUTOFFS = {
-    "loose": 0.10,
+    "loose": 0.05,
     "strict": 0.01,
 }
 color_by_strictness = {
@@ -176,7 +176,7 @@ for strictness, amplitudes_ in amplitudes.items():
         ax.hist(amplitude, bins=bins, color=color_by_strictness[strictness])
         ax.set_ylabel(study_info[study]['short_name'], rotation=0, horizontalalignment="right")
         ax.set_xscale("log")
-[ax.set_xlabel("Amplitude (hrs)") for ax in axes[-1,:]]
+[ax.set_xlabel("Amplitude (TPM)") for ax in axes[-1,:]]
 for ax in axes.flatten()[remove_unplotted]:
     ax.remove()
 util.legend_from_colormap(fig, color_by_strictness, names={s:f"Q < {c:0.2f}" for s,c in Q_CUTOFFS.items()})
