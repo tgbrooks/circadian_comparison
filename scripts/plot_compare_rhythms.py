@@ -24,6 +24,8 @@ summary = pandas.concat([
     summary,
     summary_swapped,
 ])
+summary['study1'] = summary.study1.map(lambda x: study_info[x]['short_name'])
+summary['study2'] = summary.study2.map(lambda x: study_info[x]['short_name'])
 
 
 # Reformat
@@ -33,7 +35,7 @@ one_rhythmic = wide['gain'] + wide['loss']
 total = both_rhythmic + one_rhythmic
 
 all_studies = set(summary.study1.unique()).union(summary.study2.unique())
-study_order = {study: i for i,study in enumerate(sorted(all_studies, key=lambda x: studies.targets[x]['short_name']))}
+study_order = {study: i for i,study in enumerate(sorted(all_studies))}
 
 # Load JTK and calculate overlaps
 jtk = pandas.read_csv(snakemake.input.all_jtk, sep="\t")
@@ -46,14 +48,15 @@ for study1, data1 in jtk.groupby("study"):
             continue
         sig2 = set(data2.query('significant').ID)
         jtk_overlaps.append({
-            "study1": study1,
-            "study2": study2,
+            "study1": study_info[study1]['short_name'],
+            "study2": study_info[study2]['short_name'],
             "both": len(sig1.intersection(sig2)),
             "just1": len(sig1.difference(sig2)),
             "just2": len(sig2.difference(sig1)),
         })
 jtk_overlaps = pandas.DataFrame(jtk_overlaps).set_index(['study1', 'study2'])
 jtk_overlaps['total'] = jtk_overlaps['both'] + jtk_overlaps['just1'] + jtk_overlaps['just2']
+jtk_overlaps.to_csv(outdir / "jtk_overlaps.txt", sep="\t")
 print(jtk_overlaps.head())
 # Compute the scaling
 jtk_scale = max(total.max(), jtk_overlaps['total'].max())
@@ -69,8 +72,8 @@ for study1, data1 in bootejtk.groupby("study"):
             continue
         sig2 = set(data2.query('significant').ID)
         bootejtk_overlaps.append({
-            "study1": study1,
-            "study2": study2,
+            "study1": study_info[study1]['short_name'],
+            "study2": study_info[study2]['short_name'],
             "both": len(sig1.intersection(sig2)),
             "just1": len(sig1.difference(sig2)),
             "just2": len(sig2.difference(sig1)),
@@ -78,6 +81,7 @@ for study1, data1 in bootejtk.groupby("study"):
 bootejtk_overlaps = pandas.DataFrame(bootejtk_overlaps).set_index(['study1', 'study2'])
 bootejtk_overlaps['total'] = bootejtk_overlaps['both'] + bootejtk_overlaps['just1'] + bootejtk_overlaps['just2']
 print(bootejtk_overlaps.head())
+bootejtk_overlaps.to_csv(outdir / "bootejtk_overlaps.txt", sep="\t")
 # Compute the scaling
 bootejtk_scale = max(total.max(), bootejtk_overlaps['total'].max())
 
@@ -178,12 +182,12 @@ for method in ['JTK', 'BooteJTK']:
     ax.set_ylim(0, len(study_order) + 2)
     ax.set_xticks( np.arange(len(study_order))+0.5)
     ax.set_xticklabels(
-        labels=[study_info[study]['short_name'] for study in study_order.keys()],
+        labels=list(study_order.keys()),
         rotation=90
     )
     ax.set_yticks( np.arange(len(study_order))+0.5)
     ax.set_yticklabels(
-        labels=[study_info[study]['short_name'] for study in study_order.keys()],
+        labels=list(study_order.keys()),
     )
 
     # Manually drawn legend
