@@ -872,6 +872,7 @@ rule plot_compare_rhythms:
 rule prepare_supplemental:
     input:
         jtk = "results/{tissue}/jtk24.results.txt",
+        bootejtk = "results/{tissue}/bootejtk.results.txt",
         robustness_score = "results/{tissue}/jtk24/robustness_score.txt",
         sample_info = "results/{tissue}/all_samples_info.txt",
         study_table = "results/{tissue}/study_table.txt",
