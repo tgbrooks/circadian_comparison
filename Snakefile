@@ -3,6 +3,7 @@ import json
 import re
 import pandas
 import collections
+import os
 from  scripts.process_series_matrix import process_series_matrix
 
 import studies as studies_config
@@ -18,7 +19,7 @@ tissues = ["Liver"]
 SPLINE_FIT_N_BATCHES = 400
 # Require at least this number of mean reads per gene to include in q-value computations
 MEAN_READCOUNT_THRESHOLD = 2
-WORKING_DIR = "/project/itmatlab/for_tom/circadian_controls/"
+WORKING_DIR = os.getcwd()
 BOOTEJTK_SIF = "~/.apptainer/images/ejtk_bootejtk.sif"
 
 wildcard_constraints:
