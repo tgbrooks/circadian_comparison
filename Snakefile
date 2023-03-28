@@ -32,8 +32,6 @@ rule all:
         # All study-level files:
         expand("data/{study}/sample_data.txt", study=targets.keys()),
         expand("data/{study}/label_expression.tpm.txt", study=studies),
-        expand("data/{study}/jtk.results.txt", study=studies),
-        expand("data/{study}/bootejtk/results.txt", study=studies),
         # All tissue-level files:
         expand("results/{tissue}/{file}",
             tissue = tissues,
@@ -42,41 +40,34 @@ rule all:
                 "clock_genes/plot_Arntl.png",
                 "jtk/breakdowns.png",
                 "jtk24/breakdowns.png",
-                "jtk12/breakdowns.png",
-                "jtk8/breakdowns.png",
-                "jtk/num_common_genes.txt",
-                "jtk24/num_common_genes.txt",
-                "jtk12/num_common_genes.txt",
-                "jtk8/num_common_genes.txt",
-                "common_nonrhythmic_genes.txt",
                 "PCA",
                 "jtk24/robustness/expression_level_robust.png",
-                "jtk12/robustness/expression_level_robust.png",
-                "jtk8/robustness/expression_level_robust.png",
                 "tpm_all_samples.txt",
                 "jtk.results.txt",
                 "jtk24.results.txt",
-                "jtk12.results.txt",
-                "jtk8.results.txt",
-                #"amplitude_scatter_grid.png",
                 "consensus_pca/",
                 "outlier_samples.txt",
                 "assess_jtk/period_statistics.txt",
                 "study_table.txt",
+                "bootejtk.results.txt",
+                "bootejtk/",
             ]
         ),
         "results/Liver/compareRhythms/plots/",
         "results/Liver/compareRhythms/summary.txt",
-        # NOTE: big computation, ~500 hours of CPU time
-        "results/Liver/spline_fit/summary.txt",
+        # NOTE: big computation, ~400 hours of CPU time
+        #       Must uncomment to run (or explicitly request these outputs from Snakemake)
+        #"results/Liver/spline_fit/summary.txt",
+        #"results/Liver/spline_fit/tsne.png",
+        #"results/Liver/spline_fit/stats/",
+        #"results/Liver/spline_fit/phase_variability/phase_std_distribution.png",
+        #"results/Liver/stable_genes/stable_gene_list.txt",
+        #"results/Liver/supplemental/",
+        # NOTE: a separate big computation like the above, just used to assess FDR
+        #      Not recommended to run in most circumstances
         #"results/Liver/spline_fit_perm/1/batches/1.summary.txt",
-        "results/Liver/spline_fit/tsne.png",
-        "results/Liver/spline_fit/stats/",
-        "results/Liver/spline_fit_perm/1/summary.txt",
-        "results/Liver/spline_fit_perm/1/stats/",
-        "results/Liver/spline_fit/phase_variability/phase_std_distribution.png",
-        "results/Liver/stable_genes/stable_gene_list.txt",
-        "results/Liver/supplemental/",
+        #"results/Liver/spline_fit_perm/1/summary.txt",
+        #"results/Liver/spline_fit_perm/1/stats/",
 
 rule get_series_matrix:
     output:
