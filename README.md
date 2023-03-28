@@ -1,4 +1,4 @@
-# Meta-analysis of diurnal transcriptomics reveals strong patterns of concordance and discordance in mouse liver
+# Meta-analysis of diurnal transcriptomics in mouse liver reveals low repeatability of rhythm analyses
 Comparison of 'control' circadian/diurnal timeseries data across multiple studies
 
 This project aggregates RNA-seq data from dozens of circadian timeseries transcriptomic studies in the GEO repository.
@@ -18,3 +18,46 @@ It is run from `run_pipeline.sh` which also loads necessary software, Snakemake 
 To run on your cluster, you will likely need to modify this to load the required software packages.
 
 Studies to be processed are listed in `studies.py` under the `targets` dictionary and `studies` list.
+
+## Data Availability
+
+For most users, we recommend the published results of this dataset [available on Zenodo](https://zenodo.org/record/7760579).
+This includes tables of quantified values (TPM, read counts) as well as results of running JTK, compareRhythms, booteJTK, compareRhythms and shape invariant models (SIM) across the studies.
+This saves considerable effort versus attempting to re-run the pipeline.
+
+## Running the pipeline
+
+The pipeline requires Python 3.9. First, clone this directory and `cd` into it. The python dependencies can be installed by the following.
+
+``` bash
+python -m venv venv
+source venv/bin/activate # For unix systems, command differs on Windows
+pip install -r requirements.txt
+```
+
+Additional non-Python dependencies are required to be available on the PATH:
+
+```
+sratoolkit-2.11.0
+salmon-v1.4.0
+R/3.6.3
+edirect-15.3
+```
+And finally, `R` needs the following libraries installed:
+
+```
+tidyverse, MetaCycle, assist, compareRhythms
+```
+
+## Snakemake Pipeline
+
+The below image gives the rule dependency graph of the pipeline. Click to enlarge.
+
+![rule dependency graph](https://raw.githubusercontent.com/tgbrooks/circadian_comparison/main/rulegraph_graphviz.svg)
+
+In the Snakefile, some outputs are commented out in the `all` rule (namely, those involving the SIM fits, which involves several hundred hours of compute time).
+
+## Outputs
+
+The pipeline outputs study-level intermediate and processed data to `data/$STUDY_NAME` directories.
+Results that aggregate across studies are output to `results/Liver/`.   
