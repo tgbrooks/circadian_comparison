@@ -495,6 +495,9 @@ rule plot_jtk:
         jtk = lambda wildcards: expand("data/{study}/jtk{period}.results.txt",
                                         study=studies_by_tissue(wildcards.tissue),
                                         period=wildcards.period),
+        tpm = lambda wildcards: expand("data/{study}/expression.tpm.txt",
+                                        study=studies_by_tissue(wildcards.tissue),
+                                        period=wildcards.period),
         robustness_score = "results/{tissue}/jtk{period}/robustness_score.txt",
     params:
         studies = select_tissue(studies),
@@ -502,6 +505,7 @@ rule plot_jtk:
         breakdowns = "results/{tissue}/jtk{period}/breakdowns.png",
         periods = "results/{tissue}/jtk{period}/periods.png",
         amplitudes = "results/{tissue}/jtk{period}/amplitudes.png",
+        rel_amplitudes = "results/{tissue}/jtk{period}/rel_amplitudes.png",
         phases = "results/{tissue}/jtk{period}/phases.png",
         phase_heatmap = "results/{tissue}/jtk{period}/phases.heatmap.loose.png",
         phase_heatmap_robust = "results/{tissue}/jtk{period}/phases.heatmap.robust.png",
@@ -516,6 +520,8 @@ rule plot_bootejtk:
         robustness_score = "results/{tissue}/jtk24/robustness_score.txt",
     output:
         outdir = directory("results/{tissue}/bootejtk/"),
+    resources:
+        mem_mb = 6000
     script:
         "scripts/plot_bootejtk.py"
 

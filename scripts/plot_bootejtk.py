@@ -25,9 +25,14 @@ Q_CUTOFFS = {
     "loose": 0.05,
     "strict": 0.01,
 }
+ALL_Q_CUTOFFS = {"all": 1.0, **Q_CUTOFFS}
 color_by_strictness = {
     "loose": "lightblue",
     "strict": "darkblue",
+}
+color_by_all_strictness = {
+    "all": "lightgray",
+    **color_by_strictness,
 }
 jtk_period = 24
 
@@ -122,3 +127,20 @@ for ax in axes.flatten()[remove_unplotted]:
 util.legend_from_colormap(fig, color_by_strictness, names={s:f"Q < {c:0.2f}" for s,c in Q_CUTOFFS.items()})
 fig.tight_layout()
 fig.savefig(outdir / "amplitudes.png", dpi=DPI)
+
+# Histogram of relative amplitudes
+fig, axes = pylab.subplots(figsize=(1+5*N_COLUMNS,0.7+0.7*N_ROWS), nrows=N_ROWS, ncols=N_COLUMNS, sharex=True, squeeze=False)
+bins = numpy.logspace(-1,4, 51)
+for strictness, q_cutoff in ALL_Q_CUTOFFS.items():
+    for (study, study_data), ax in zip(bootejtk.groupby("study"), axes.flatten()):
+        significant = study_data[study_data.GammaBH <= q_cutoff]
+        rel_amplitude = significant.Max_Amp / (significant.Mean + 1)
+        ax.hist(rel_amplitude, bins=bins, color=color_by_all_strictness[strictness])
+        ax.set_ylabel(study_info[study]['short_name'], rotation=0, horizontalalignment="right")
+        ax.set_xlim(0, 4)
+[ax.set_xlabel("Relative Amplitude") for ax in axes[-1,:]]
+for ax in axes.flatten()[remove_unplotted]:
+    ax.remove()
+util.legend_from_colormap(fig, color_by_all_strictness, names={s:f"Q ≤ {c:0.2f}" for s,c in ALL_Q_CUTOFFS.items()})
+fig.tight_layout()
+fig.savefig(outdir / "rel_amplitudes.png", dpi=DPI)

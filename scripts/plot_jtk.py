@@ -53,8 +53,11 @@ periods = {strictness:{} for strictness in Q_CUTOFFS.keys()}
 phases = {strictness:{} for strictness in Q_CUTOFFS.keys()}
 robust_genes_phases = {}
 amplitudes = {strictness:{} for strictness in Q_CUTOFFS.keys()}
-for study, jtkfile in zip(studies, snakemake.input.jtk):
+rel_amplitudes = {strictness:{} for strictness in Q_CUTOFFS.keys()}
+for study, jtkfile, tpmfile in zip(studies, snakemake.input.jtk, snakemake.input.tpm):
     jtk = pandas.read_csv(jtkfile, sep="\t", index_col=0)
+    tpm = pandas.read_csv(tpmfile, sep="\t", index_col=0)
+    mean_expr = tpm.mean(axis=1)
     breakdowns[study] = num_below(jtk['qvalue'], breakpoints)
 
     for strictness, cutoff in Q_CUTOFFS.items():
@@ -62,6 +65,7 @@ for study, jtkfile in zip(studies, snakemake.input.jtk):
         periods[strictness][study] = significant['PER']
         phases[strictness][study] = significant['LAG']
         amplitudes[strictness][study] = significant['AMP']
+        rel_amplitudes[strictness][study] = significant['AMP'] / (significant.index.map(mean_expr)+0.1) # 0.1 tpm for pseudocount
 
         robust_genes_phases[study] = jtk.loc[jtk.index.isin(highly_robust_genes), 'LAG']
 
@@ -182,3 +186,19 @@ for ax in axes.flatten()[remove_unplotted]:
 util.legend_from_colormap(fig, color_by_strictness, names={s:f"Q < {c:0.2f}" for s,c in Q_CUTOFFS.items()})
 fig.tight_layout()
 fig.savefig(snakemake.output.amplitudes, dpi=DPI)
+
+# Histogram of relative amplitudes
+fig, axes = pylab.subplots(figsize=(1+5*N_COLUMNS,0.7+0.7*N_ROWS), nrows=N_ROWS, ncols=N_COLUMNS, sharex=True, squeeze=False)
+bins = numpy.logspace(-1,4, 51)
+for strictness, amplitudes_ in amplitudes.items():
+    for ax, study in zip(axes.flatten(), include_studies):
+        amplitude = amplitudes_[study]
+        ax.hist(amplitude, bins=bins, color=color_by_strictness[strictness])
+        ax.set_ylabel(study_info[study]['short_name'], rotation=0, horizontalalignment="right")
+        ax.set_xscale("log")
+[ax.set_xlabel("Relative Amplitude") for ax in axes[-1,:]]
+for ax in axes.flatten()[remove_unplotted]:
+    ax.remove()
+util.legend_from_colormap(fig, color_by_strictness, names={s:f"Q < {c:0.2f}" for s,c in Q_CUTOFFS.items()})
+fig.tight_layout()
+fig.savefig(snakemake.output.rel_amplitudes, dpi=DPI)
