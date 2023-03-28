@@ -42,12 +42,16 @@ sratoolkit-2.11.0
 salmon-v1.4.0
 R/3.6.3
 edirect-15.3
+apptainer 1.1.3
 ```
-And finally, `R` needs the following libraries installed:
+Next, `R` needs the following libraries installed:
 
 ```
 tidyverse, MetaCycle, assist, compareRhythms
 ```
+
+Finally, running BooteJTK is done via `apptainer` to run an image with the appropriate dependencies installed.
+First, use `apptainer build` to build the dockerfile `bootejtk/Dockerfile` and then update the directory in `Snakemake` file to point to this (default location is `~/.apptainer/images/ejtk_bootejtk.sif`).
 
 ## Snakemake Pipeline
 
@@ -60,4 +64,4 @@ In the Snakefile, some outputs are commented out in the `all` rule (namely, thos
 ## Outputs
 
 The pipeline outputs study-level intermediate and processed data to `data/$STUDY_NAME` directories.
-Results that aggregate across studies are output to `results/Liver/`.   
+Results that aggregate across studies are output to `results/Liver/`.
