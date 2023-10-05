@@ -1,5 +1,7 @@
 # Meta-analysis of diurnal transcriptomics in mouse liver reveals low repeatability of rhythm analyses
-Comparison of 'control' circadian/diurnal timeseries data across multiple studies
+Comparison of 'control' circadian/diurnal timeseries data across multiple studies. This is the pipeline for the paper:
+
+Brooks TG, Manjrekar A, Mrčela A, Grant GR. [Meta-analysis of Diurnal Transcriptomics in Mouse Liver Reveals Low Repeatability of Rhythm Analyses](https://journals.sagepub.com/doi/10.1177/07487304231179600). Journal of Biological Rhythms. 2023.
 
 This project aggregates RNA-seq data from dozens of circadian timeseries transcriptomic studies in the GEO repository.
 Datasets were selected to contain mice from 'control' conditions.
